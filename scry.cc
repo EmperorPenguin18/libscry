@@ -1,4 +1,4 @@
-#include "myclass.h"
+#include "scry.h"
 #include <iostream>
 
 using namespace std;
