@@ -1,24 +1,20 @@
-#include "myclass.h"
+#include <dlfcn.h>
 #include <iostream>
+#include "scry.h"
 
 using namespace std;
 
-extern "C" MyClass* create_object()
+int main(int argc, char **argv)
 {
-  return new MyClass;
-}
+  void* handle = dlopen("./scry.so", RTLD_LAZY);
 
-extern "C" void destroy_object( MyClass* object )
-{
-  delete object;
-}
+  MyClass* (*create)();
+  void (*destroy)(MyClass*);
 
-MyClass::MyClass()
-{
-  x = 20;
-}
+  create = (MyClass* (*)())dlsym(handle, "create_object");
+  destroy = (void (*)(MyClass*))dlsym(handle, "destroy_object");
 
-void MyClass::DoSomething()
-{
-  cout<<x<<endl;
+  MyClass* myClass = (MyClass*)create();
+  myClass->DoSomething();
+  destroy( myClass );
 }
