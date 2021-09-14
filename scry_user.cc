@@ -1,6 +1,6 @@
 #include <dlfcn.h>
 #include <iostream>
-#include "scry.h"
+#include <libscry.h>
 
 using namespace std;
 
