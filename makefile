@@ -5,6 +5,7 @@ build: libscry.h libscry.cc scry_user.cc
 install: libscry.h libscry.so scry_user
 	@mkdir -p /usr/bin/
 	@mkdir -p /usr/lib/
-	@mv libscry.h /usr/lib/libscry.h
+	@mkdir -p /usr/include/
+	@mv libscry.h /usr/include/libscry.h
 	@mv libscry.so /usr/lib/libscry.so
 	@mv scry_user /usr/bin/scry_user
