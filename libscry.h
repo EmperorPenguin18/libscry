@@ -10,7 +10,8 @@ public:
   virtual void DoSomething();
 
 private:
-  int x;
+  CURL easyhandle;
+  CURLcode success;
 };
 
 #endif
