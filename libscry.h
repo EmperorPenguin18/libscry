@@ -1,5 +1,6 @@
 #ifndef __SCRY_H__
 #define __SCRY_H__
+#include <curl/curl.h>
 
 class MyClass
 {
