@@ -20,10 +20,13 @@ MyClass::MyClass()
 {
   curl_global_init(CURL_GLOBAL_ALL);
   easyhandle = curl_easy_init();
+  rc = sqlite3_open("/home/sebastien/test.db", &db);
 }
 
 void MyClass::DoSomething()
 {
-  curl_easy_setopt(easyhandle, CURLOPT_URL, "https://api.scryfall.com/cards/search?q=c%3Ared+pow%3D3");
+  curl_easy_setopt(easyhandle, CURLOPT_URL, "https://api.scryfall.com/cards/named?fuzzy=island");
   success = curl_easy_perform(easyhandle);
+  curl_easy_cleanup(easyhandle);
+  sqlite3_close(db);
 }
