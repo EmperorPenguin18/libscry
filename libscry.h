@@ -1,6 +1,7 @@
 #ifndef __SCRY_H__
 #define __SCRY_H__
 #include <curl/curl.h>
+#include <sqlite3.h>
 
 class MyClass
 {
@@ -13,6 +14,8 @@ public:
 private:
   CURL easyhandle;
   CURLcode success;
+  sqlite3 *db;
+  int rc;
 };
 
 #endif
