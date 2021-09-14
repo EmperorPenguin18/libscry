@@ -1,5 +1,5 @@
 build: libscry.h libscry.cc scry_user.cc
-	g++ -lcurl -fPIC -shared scry.cc -o libscry.so
+	g++ -lcurl -fPIC -shared libscry.cc -o libscry.so
 	g++ scry_user.cc -ldl -o scry_user
 
 install: libscry.h libscry.so scry_user
