@@ -6,7 +6,7 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-  void* handle = dlopen("./scry.so", RTLD_LAZY);
+  void* handle = dlopen("/usr/lib/libscry.so", RTLD_LAZY);
 
   MyClass* (*create)();
   void (*destroy)(MyClass*);
