@@ -2,20 +2,31 @@
 #define __SCRY_H__
 #include <curl/curl.h>
 #include <sqlite3.h>
+#include <string>
 
-class MyClass
+class Card
 {
-public:
-  MyClass();
+  public:
+    Card(string name);
+  
+    string getName();
+  private:
+    string name;
+}
 
-  /* use virtual otherwise linker will try to perform static linkage */
-  virtual void DoSomething();
+class Scry
+{
+  public:
+    Scry();
 
-private:
-  CURL easyhandle;
-  CURLcode success;
-  sqlite3 *db;
-  int rc;
+    /* use virtual otherwise linker will try to perform static linkage */
+    virtual Card cards_named(string search);
+    virtual void cleanup();
+
+  private:
+    CURL easyhandle;
+    sqlite3 *db;
+    int rc;
 };
 
 #endif
