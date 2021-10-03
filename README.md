@@ -5,7 +5,7 @@ Uses Scryfall API to generate card data.
 
 ## Dependencies
 
-curl and sqlite3
+curl, sqlite3 and jsoncpp
 
 ## Install
 ```
