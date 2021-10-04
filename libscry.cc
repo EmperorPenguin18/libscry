@@ -55,14 +55,14 @@ Card Scry::cards_named(string search)
   curl_easy_setopt(easyhandle, CURLOPT_WRITEDATA, data);
   CURLcode success = curl_easy_perform(easyhandle);
   if (success != 0) {
-    printf("Error");
+    printf("Error\n");
     exit(1);
   }
   stringstream temp(&data);
   Json::Value root;
   temp >> root;
-  Card card(root["name"]);
-  return card
+  Card card(root["name"].asString());
+  return card;
 }
 
 void Scry::cleanup()
@@ -72,9 +72,9 @@ void Scry::cleanup()
   sqlite3_close(db);
 }
 
-Card::Card(string name) { name(name) }
+Card::Card(const string& name) : name(name) {}
 
-string Card::getName()
+string& Card::getName()
 {
   return name;
 }
