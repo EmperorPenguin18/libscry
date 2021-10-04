@@ -25,43 +25,34 @@ Scry::Scry()
   rc = sqlite3_open("/home/sebastien/test.db", &db);
 }
 
-static string *DownloadedResponse;
-
-static size_t writer(char *data, size_t size, size_t nmemb, string *buffer_in)
+static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    cout << "In writer callback" << endl;
-
-    // Is there anything in the buffer?
-    if (buffer_in != NULL)
-    {
-        cout << "Buffer not null" << endl;
-        // Append the data to the buffer
-        buffer_in->append(data, size * nmemb);
-        cout <<" Buffer appended, seting response" << endl;
-
-        DownloadedResponse = buffer_in;
-        cout << "Set downloadedResponse" << endl;
-        return size * nmemb;
-    }
-
-    return 0;
+    ((string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
 }
 
 Card Scry::cards_named(string search)
 {
-  curl_easy_setopt(easyhandle, CURLOPT_URL, "https://api.scryfall.com/cards/named?fuzzy=" + search);
-  curl_easy_setopt(easyhandle, CURLOPT_WRITEFUNCTION, writer);
-  string *data;
-  curl_easy_setopt(easyhandle, CURLOPT_WRITEDATA, data);
+  string url = "https://api.scryfall.com/cards/named?fuzzy=";
+  url.append(search);
+  curl_easy_setopt(easyhandle, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(easyhandle, CURLOPT_WRITEFUNCTION, WriteCallback);
+  string data;
+  curl_easy_setopt(easyhandle, CURLOPT_WRITEDATA, &data);
+  curl_easy_setopt(easyhandle, CURLOPT_FOLLOWLOCATION, 1);
+  curl_easy_setopt(easyhandle, CURLOPT_HTTPGET, 1);
   CURLcode success = curl_easy_perform(easyhandle);
   if (success != 0) {
-    printf("Error\n");
-    exit(1);
+    printf("Errored with CURLcode %i\n", success);
+    exit(success);
   }
-  stringstream temp(&data);
+  Json::CharReaderBuilder reader;
+  reader["collectComments"] = false;
+  stringstream temp(data);
   Json::Value root;
-  temp >> root;
-  Card card(root["name"].asString());
+  Json::String errs;
+  Json::parseFromStream(reader, temp, &root, &errs);
+  Card card(root.get("name", "UTF-32").asString());
   return card;
 }
 
