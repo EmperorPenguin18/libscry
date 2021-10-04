@@ -4,12 +4,14 @@
 #include <sqlite3.h>
 #include <string>
 
+using namespace std;
+
 class Card
 {
   public:
-    Card(string name);
+    Card(const string& name);
   
-    string getName();
+    string& getName();
   private:
     string name;
 }
@@ -24,7 +26,7 @@ class Scry
     virtual void cleanup();
 
   private:
-    CURL easyhandle;
+    CURL *easyhandle;
     sqlite3 *db;
     int rc;
 };
