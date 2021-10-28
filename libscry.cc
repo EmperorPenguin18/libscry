@@ -3,11 +3,11 @@
 #include <curl/curl.h>
 #include <sqlite3.h>
 #include <string>
-#include <json/json.h>
-#include <sstream>
+#include <rapidjson/document.h>
 #include <vector>
 
 using namespace std;
+using namespace rapidjson;
 
 extern "C" Scry* create_object()
 {
@@ -47,13 +47,9 @@ Card * Scry::cards_named(string search)
     printf("Errored with CURLcode %i\n", success);
     exit(success);
   }
-  Json::CharReaderBuilder reader;
-  reader["collectComments"] = false;
-  stringstream temp(data);
-  Json::Value root;
-  Json::String errs;
-  Json::parseFromStream(reader, temp, &root, &errs);
-  Card * card = new Card(root.get("name", "UTF-32").asString());
+  Document document;
+  document.Parse(data.c_str());
+  Card * card = new Card(document["name"].GetString());
   cards.push_back(card);
   return card;
 }
