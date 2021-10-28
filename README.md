@@ -2,19 +2,26 @@
 A Magic: The Gathering library
 
 Uses Scryfall API to generate card data.
-
 ## Dependencies
-
-curl, sqlite3 and jsoncpp
-
+curl, sqlite3 and rapidjson
 ## Install
+Arch
+```
+git clone https://github.com/EmperorPenguin18/libscry
+cd libscry
+makepkg -si
+```
+Or just install from the [AUR](https://aur.archlinux.org/packages/libscry)
+
+Other Linux
 ```
 git clone https://github.com/EmperorPenguin/libscry
 cd libscry
 make
 make install #as root
 ```
-
+## Documentation
+Available in [docs](docs/)
 ## Legal
 From the API Docs:
 
