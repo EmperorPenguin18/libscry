@@ -3,6 +3,7 @@
 #include <curl/curl.h>
 #include <sqlite3.h>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -11,7 +12,7 @@ class Card
   public:
     Card(const string& name);
   
-    string& getName();
+    virtual string& getName();
   private:
     string name;
 }
@@ -29,6 +30,7 @@ class Scry
     CURL *easyhandle;
     sqlite3 *db;
     int rc;
+    vector<Card *> cards;
 };
 
 #endif
