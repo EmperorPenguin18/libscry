@@ -5,6 +5,7 @@
 #include <string>
 #include <json/json.h>
 #include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -31,7 +32,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *use
     return size * nmemb;
 }
 
-Card Scry::cards_named(string search)
+Card * Scry::cards_named(string search)
 {
   string url = "https://api.scryfall.com/cards/named?fuzzy=";
   url.append(search);
@@ -52,7 +53,8 @@ Card Scry::cards_named(string search)
   Json::Value root;
   Json::String errs;
   Json::parseFromStream(reader, temp, &root, &errs);
-  Card card(root.get("name", "UTF-32").asString());
+  Card * card = new Card(root.get("name", "UTF-32").asString());
+  cards.push_back(card);
   return card;
 }
 
@@ -61,6 +63,10 @@ void Scry::cleanup()
   curl_easy_cleanup(easyhandle);
   curl_global_cleanup();
   sqlite3_close(db);
+  while (!cards.empty()) {
+    delete cards.at(0);
+    cards.pop_back();
+  }
 }
 
 Card::Card(const string& name) : name(name) {}
