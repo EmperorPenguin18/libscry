@@ -60,7 +60,7 @@ void Scry::cleanup()
   curl_global_cleanup();
   sqlite3_close(db);
   while (!cards.empty()) {
-    delete cards.at(0);
+    delete cards.back();
     cards.pop_back();
   }
 }
