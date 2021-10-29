@@ -3,9 +3,11 @@
 #include <curl/curl.h>
 #include <sqlite3.h>
 #include <string>
-#include <rapidjson/document.h>
-#include <vector>
 #include <cstring>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+#include <vector>
 
 using namespace std;
 using namespace rapidjson;
@@ -73,8 +75,46 @@ char * Scry::api_call(const char * url) {
   return chunk.response;
 }
 
+vector<Card *> Scry::cards_search(string query) {
+  string url = "https://api.scryfall.com/cards/search?q=" + query;
+  char * rawjson;
+  Document doc;
+  vector<Card *> output;
+  do {
+    rawjson = api_call(url.c_str());
+    doc.Parse(rawjson);
+    for (int i = 0; i < doc["data"].Size(); i++) {
+      StringBuffer buffer;
+      Writer<StringBuffer> writer(buffer);
+      doc["data"][i].Accept(writer);
+      output.push_back(new Card(buffer.GetString()));
+      cards.push_back(output.back());
+    }
+    if (!doc["has_more"].GetBool()) break;
+    url = doc["next_page"].GetString();
+  } while (true);
+  return output;
+}
+
 Card * Scry::cards_named(string query) {
   string url = "https://api.scryfall.com/cards/named?fuzzy=" + query;
+  Card * card = new Card(api_call(url.c_str()));
+  cards.push_back(card);
+  return card;
+}
+
+vector<string> Scry::cards_autocomplete(string query) {
+  string url = "https://api.scryfall.com/cards/autocomplete?q=" + query;
+  Document doc;
+  doc.Parse(api_call(url.c_str()));
+  const Value& a = doc["data"];
+  vector<string> output;
+  for (auto& v : a.GetArray()) output.push_back(v.GetString());
+  return output;
+}
+
+Card * Scry::cards_random() {
+  string url = "https://api.scryfall.com/cards/random";
   Card * card = new Card(api_call(url.c_str()));
   cards.push_back(card);
   return card;
