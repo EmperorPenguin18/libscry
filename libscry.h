@@ -27,9 +27,9 @@ class Scry
     ~Scry();
 
     /* use virtual otherwise linker will try to perform static linkage */
-    virtual vector cards_search(string query);
+    virtual vector<Card *> cards_search(string query);
     virtual Card * cards_named(string query);
-    virtual vector cards_autocomplete(string query);
+    virtual vector<string> cards_autocomplete(string query);
     virtual Card * cards_random();
 
   private:
