@@ -173,9 +173,7 @@ Card * Scry::cards_named_cache(string query) {
     str = "SELECT Updated FROM Cards WHERE Name='" + query + "';";
     if (datecheck( db_exec(str.c_str()) ) == 1) {
       card = cards_named(query);
-      str = "UPDATE Cards SET Updated=datetime(), Data='";
-      string temp = card->json();
-      str.append(temp).append("' WHERE Name='").append(query).append("';");
+      str = "UPDATE Cards SET Updated=datetime(), Data='" + card->json() + "' WHERE Name='" + query + "';";
       db_exec(str.c_str());
     } else {
       str = "SELECT Data FROM Cards WHERE Name='" + query + "';";
