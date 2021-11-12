@@ -167,7 +167,6 @@ Card * Scry::cards_named(string query) {
 Card * Scry::cards_named_cache(string query) {
   Card * card;
   query[0] = toupper(query[0]);
-
   string str = "SELECT COUNT(1) FROM Cards WHERE Name='" + query + "';";
   if (db_exec(str.c_str()).compare("1") == 0) {
     str = "SELECT Updated FROM Cards WHERE Name='" + query + "';";
@@ -182,12 +181,9 @@ Card * Scry::cards_named_cache(string query) {
     }
   } else {
     card = cards_named(query);
-    str = "INSERT INTO Cards VALUES ('" + query + "', datetime(), '";
-    string temp = card->json();
-    str.append(temp).append("');");
+    str = "INSERT INTO Cards VALUES ('" + query + "', datetime(), '" + card->json() + "');";
     db_exec(str.c_str());
   }
-
   return card;
 }
 
