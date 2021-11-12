@@ -1,14 +1,19 @@
-#ifndef __SCRY_H__
-#define __SCRY_H__
-#include <curl/curl.h>
-#include <sqlite3.h>
+#pragma once
 #include <string>
 #include <vector>
-#include <rapidjson/document.h>
 #include <cstring>
+#include <iostream>
+#include <chrono>
+#include <sstream>
+#include <curl/curl.h>
+#include <sqlite3.h>
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
 
 using namespace std;
 using namespace rapidjson;
+using namespace std::chrono;
 
 class Card
 {
@@ -16,6 +21,7 @@ class Card
     Card(const char * rawjson);
   
     virtual string name();
+    virtual string json();
   private:
     Document data;
 };
@@ -29,15 +35,16 @@ class Scry
     /* use virtual otherwise linker will try to perform static linkage */
     virtual vector<Card *> cards_search(string query);
     virtual Card * cards_named(string query);
+    virtual Card * cards_named_cache(string query);
     virtual vector<string> cards_autocomplete(string query);
     virtual Card * cards_random();
 
   private:
     CURL *easyhandle;
     sqlite3 *db;
-    int rc;
     vector<Card *> cards;
     virtual char * api_call(const char * url);
+    virtual string db_exec(const char * cmd);
+    virtual int datecheck(string datetime);
+    virtual const year_month_day parse(string datetime);
 };
-
-#endif
