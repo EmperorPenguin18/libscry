@@ -17,14 +17,12 @@ struct memory {
   size_t size;
 };
 
-static size_t cb(void *data, size_t size, size_t nmemb, void *userp)
-{
+static size_t cb(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
 
   char *ptr = (char *)realloc(mem->response, mem->size + realsize + 1);
-  if(ptr == NULL)
-    return 0;  /* out of memory! */
+  if (ptr == NULL) return 0; // out of memory!
 
   mem->response = ptr;
   memcpy(&(mem->response[mem->size]), data, realsize);
@@ -50,6 +48,7 @@ Scry::Scry() {
     exit(1);
   }
   db_exec("CREATE TABLE IF NOT EXISTS Cards(Name TEXT, Updated DATETIME, Data TEXT);");
+  db_exec("CREATE TABLE IF NOT EXISTS Lists(Query TEXT, Updated DATETIME, Names TEXT);");
 }
 
 Scry::~Scry() {
@@ -60,10 +59,14 @@ Scry::~Scry() {
     delete cards.back();
     cards.pop_back();
   }
+  while (!lists.empty()) {
+    delete lists.back();
+    lists.pop_back();
+  }
 }
 
-char * Scry::api_call(const char * url) {
-  curl_easy_setopt(easyhandle, CURLOPT_URL, url);
+char * Scry::api_call(string url) {
+  curl_easy_setopt(easyhandle, CURLOPT_URL, url.c_str());
   struct memory chunk = {0};
   curl_easy_setopt(easyhandle, CURLOPT_WRITEDATA, (void *)&chunk);
   CURLcode success = curl_easy_perform(easyhandle);
@@ -74,30 +77,54 @@ char * Scry::api_call(const char * url) {
   return chunk.response;
 }
 
-string Scry::db_exec(const char * cmd)
-{
-    sqlite3_stmt *stmt;
-    int rc = sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL);
-    if (rc != SQLITE_OK)
-        throw string(sqlite3_errmsg(db));
-
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
-        string errmsg(sqlite3_errmsg(db));
-        sqlite3_finalize(stmt);
-        throw errmsg;
-    }
-    /*if (rc == SQLITE_DONE) {
-        sqlite3_finalize(stmt);
-        throw string("customer not found");
-    }*/
-
-    string output;
-    char temp[7] = ""; strncpy(temp, cmd, 6); temp[6] = '\0';
-    if (strcmp(temp, "SELECT") == 0) output = string((char*)sqlite3_column_text(stmt, 0));
-
+string Scry::db_exec(string in) {
+  const char * cmd = in.c_str();
+  sqlite3_stmt *stmt;
+  int rc = sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL);
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "DB error: %s\n", sqlite3_errmsg(db));
+    exit(1);
+  }
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
+    fprintf(stderr, "DB error: %s\n", sqlite3_errmsg(db));
     sqlite3_finalize(stmt);
-    return output;
+    exit(1);
+  }
+  string output;
+  char temp[7] = ""; strncpy(temp, cmd, 6); temp[6] = '\0';
+  if (strcmp(temp, "SELECT") == 0) output = string((char*)sqlite3_column_text(stmt, 0));
+  sqlite3_finalize(stmt);
+  return output;
+}
+
+bool Scry::db_check(string table, string search) {
+  string cmd;
+  if (table == "Cards") cmd = "SELECT COUNT(1) FROM Cards WHERE Name='" + search + "';";
+  else cmd = "SELECT COUNT(1) FROM Lists WHERE Query='" + search + "';";
+  if (db_exec(cmd).compare("1") == 0) return true;
+  return false;
+}
+
+string Scry::db_read(string table, string search, string column) {
+  string cmd;
+  if (table == "Cards") cmd = "SELECT " + column + " FROM Cards WHERE Name='" + search + "';";
+  else cmd = "SELECT " + column + " FROM Lists WHERE Query='" + search + "';";
+  return db_exec(cmd);
+}
+
+void Scry::db_write(string table, string key, string value) {
+  string cmd;
+  if (table == "Cards") cmd = "UPDATE Cards SET Updated=datetime(), Data='" + value + "' WHERE Name='" + key + "';";
+  else cmd = "UPDATE Lists SET Updated=datetime(), Names='" + value + "' WHERE Query='" + key + "';";
+  db_exec(cmd);
+}
+
+void Scry::db_new(string table, string key, string value) {
+  string cmd;
+  if (table == "Cards") cmd = "INSERT INTO Cards VALUES ('" + key + "', datetime(), '" + value + "');";
+  else cmd = "INSERT INTO Lists VALUE ('" + key + "', datetime(), '" + value + "');";
+  db_exec(cmd);
 }
 
 const year_month_day Scry::parse(string datetime) {
@@ -136,61 +163,140 @@ int Scry::datecheck(string datetime) {
   return output;
 }
 
-vector<Card *> Scry::cards_search(string query) {
+vector<string> Scry::explode(const string& str, const char& ch) {
+  string next;
+  vector<string> result;
+  for (string::const_iterator it = str.begin(); it != str.end(); it++) {
+    if (*it == ch) {
+      if (!next.empty()) {
+        result.push_back(next);
+        next.clear();
+      }
+    } else next += *it;
+  }
+  if (!next.empty()) result.push_back(next);
+  return result;
+}
+
+string Scry::urlformat(string str) {
+  regex space(" ");
+  regex colon(":");
+  str = regex_replace(str, space, "%20");
+  str = regex_replace(str, colon, "%3A");
+  return str;
+}
+
+string Scry::nameformat(string str) {
+  regex apos("'");
+  str = regex_replace(str, apos, "''");
+  return str;
+}
+
+List * Scry::cards_search(string query) {
+  query = urlformat(query);
   string url = "https://api.scryfall.com/cards/search?q=" + query;
-  char * rawjson;
-  Document doc;
-  vector<Card *> output;
-  do {
-    rawjson = api_call(url.c_str());
-    doc.Parse(rawjson);
-    for (int i = 0; i < doc["data"].Size(); i++) {
-      StringBuffer buffer;
-      Writer<StringBuffer> writer(buffer);
-      doc["data"][i].Accept(writer);
-      output.push_back(new Card(buffer.GetString()));
-      cards.push_back(output.back());
+  List * list = new List(this, api_call(url), false);
+  lists.push_back(list);
+  return list;
+}
+
+string Scry::cachecard(List * list, bool recursive) {
+  string names = "";
+  if (recursive) {
+    for (int i = 0; i < list->allcards().size(); i++) {
+      string name = nameformat(list->allcards()[i]->name());
+      names += name + "\n";
+      string temp = nameformat(list->allcards()[i]->json());
+      if (i < list->cards().size()) {
+        if (db_check("Cards", name)) {
+          db_write("Cards", name, temp);
+        } else db_new("Cards", name, temp);
+      }
     }
-    if (!doc["has_more"].GetBool()) break;
-    url = doc["next_page"].GetString();
-  } while (true);
-  return output;
+  } else {
+    for (int i = 0; i < list->cards().size(); i++) {
+      string name = nameformat(list->cards()[i]->name());
+      names += name + "\n";
+      string temp = nameformat(list->cards()[i]->json());
+      if (db_check("Cards", name)) {
+        db_write("Cards", name, temp);
+      } else db_new("Cards", name, temp);
+    }
+  }
+  names.pop_back();
+  return names;
+}
+
+List * Scry::cards_search_cache(string query) {
+  query = urlformat(query);
+  List * list;
+
+  regex pages(".*&p"); smatch sm; regex_search(query, sm, pages);
+  string search = string(sm[0]).substr(0, sm[0].length()-2);
+  if (size(search) < 1) search = query;
+  if (db_check("Lists", search)) {
+    if (datecheck( db_read("Lists", search, "Updated") ) == 1) {
+      string url = "https://api.scryfall.com/cards/search?q=" + query;
+      list = new List(this, api_call(url), true);
+      lists.push_back(list);
+      db_write("Lists", search, cachecard(list, true));
+    } else {
+      vector<string> strvec = explode(db_read("Lists", search, "Names"), '\n');
+      vector<Card *> content;
+      for (int i = 0; i < strvec.size(); i++)
+	content.push_back( new Card( db_read("Cards", nameformat(strvec[i]), "Data").c_str() ) );
+      list = new List( content );
+      lists.push_back(list);
+    }
+  } else {
+    string url = "https://api.scryfall.com/cards/search?q=" + query;
+    list = new List(this, api_call(url), true);
+    lists.push_back(list);
+    string names = cachecard(list, false);
+    if (db_check("Lists", search)) {
+      string temp = nameformat( db_read("Lists", search, "Names") );
+      db_write("Lists", search, names + "\n" + temp);
+    } else db_new("Lists", search, names);
+  }
+
+  return list;
 }
 
 Card * Scry::cards_named(string query) {
+  query = urlformat(query);
   string url = "https://api.scryfall.com/cards/named?fuzzy=" + query;
-  Card * card = new Card(api_call(url.c_str()));
+  Card * card = new Card(api_call(url));
   cards.push_back(card);
   return card;
 }
 
 Card * Scry::cards_named_cache(string query) {
+  query = urlformat(query);
   Card * card;
   query[0] = toupper(query[0]);
-  string str = "SELECT COUNT(1) FROM Cards WHERE Name='" + query + "';";
-  if (db_exec(str.c_str()).compare("1") == 0) {
-    str = "SELECT Updated FROM Cards WHERE Name='" + query + "';";
-    if (datecheck( db_exec(str.c_str()) ) == 1) {
+  string name = nameformat(query);
+
+  if (db_check("Cards", name)) {
+    if (datecheck( db_read("Cards", name, "Updated") ) == 1) {
       card = cards_named(query);
-      str = "UPDATE Cards SET Updated=datetime(), Data='" + card->json() + "' WHERE Name='" + query + "';";
-      db_exec(str.c_str());
+      db_write("Cards", name, nameformat(card->json()));
     } else {
-      str = "SELECT Data FROM Cards WHERE Name='" + query + "';";
-      card = new Card( db_exec(str.c_str()).c_str() );
+      card = new Card( db_read("Cards", name, "Data").c_str() );
       cards.push_back(card);
     }
   } else {
     card = cards_named(query);
-    str = "INSERT INTO Cards VALUES ('" + query + "', datetime(), '" + card->json() + "');";
-    db_exec(str.c_str());
+    db_new("Cards", name, nameformat(card->json()));
   }
+
   return card;
 }
 
 vector<string> Scry::cards_autocomplete(string query) {
+  query = urlformat(query);
   string url = "https://api.scryfall.com/cards/autocomplete?q=" + query;
   Document doc;
-  doc.Parse(api_call(url.c_str()));
+  doc.Parse(api_call(url));
   const Value& a = doc["data"];
   vector<string> output;
   for (auto& v : a.GetArray()) output.push_back(v.GetString());
@@ -199,7 +305,7 @@ vector<string> Scry::cards_autocomplete(string query) {
 
 Card * Scry::cards_random() {
   string url = "https://api.scryfall.com/cards/random";
-  Card * card = new Card(api_call(url.c_str()));
+  Card * card = new Card(api_call(url));
   cards.push_back(card);
   return card;
 }
@@ -217,4 +323,50 @@ string Card::json() {
   Writer<StringBuffer> writer(buffer);
   data.Accept(writer);
   return buffer.GetString();
+}
+
+List::List(Scry * scry, const char * rawjson, bool cache) {
+  Document doc;
+  doc.Parse(rawjson);
+  for (int i = 0; i < doc["data"].Size(); i++) {
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    doc["data"][i].Accept(writer);
+    content.push_back(new Card(buffer.GetString()));
+  }
+  if (doc["has_more"].GetBool()) {
+    string url = doc["next_page"].GetString();
+    regex q("q=.*&");
+    regex page("page=.*&q");
+    smatch sm1; regex_search(url, sm1, q);
+    smatch sm2; regex_search(url, sm2, page);
+    string query = string(sm1[0]).substr(2, sm1[0].length()-2) + string(sm2[0]).substr(0, sm2[0].length()-2);
+    if (cache) nextpage = scry->cards_search_cache(query);
+    else nextpage = scry->cards_search(query);
+  } else nextpage = nullptr;
+}
+
+List::List(vector<Card *> input) {
+  content = input;
+  nextpage = nullptr;
+}
+
+List::~List() {
+  while (!content.empty()) {
+    delete content.back();
+    content.pop_back();
+  }
+}
+
+vector<Card *> List::cards() {
+  return content;
+}
+
+vector<Card *> List::allcards() {
+  vector<Card *> output = cards();
+  if (nextpage != nullptr) {
+    vector<Card *> append = nextpage->allcards();
+    output.insert(output.end(), append.begin(), append.end());
+  }
+  return output;
 }
