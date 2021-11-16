@@ -123,7 +123,7 @@ void Scry::db_write(string table, string key, string value) {
 void Scry::db_new(string table, string key, string value) {
   string cmd;
   if (table == "Cards") cmd = "INSERT INTO Cards VALUES ('" + key + "', datetime(), '" + value + "');";
-  else cmd = "INSERT INTO Lists VALUE ('" + key + "', datetime(), '" + value + "');";
+  else cmd = "INSERT INTO Lists VALUES ('" + key + "', datetime(), '" + value + "');";
   db_exec(cmd);
 }
 
