@@ -190,6 +190,7 @@ string Scry::implode(const vector<string>& strs, const char& ch) {
   }
   return result;
 }
+
 string Scry::urlformat(string str) {
   regex space(" ");
   regex colon(":");
