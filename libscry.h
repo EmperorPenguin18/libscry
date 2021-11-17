@@ -54,6 +54,7 @@ class Scry {
     virtual Card * cards_named(string query);
     virtual Card * cards_named_cache(string query);
     virtual vector<string> cards_autocomplete(string query);
+    virtual vector<string> cards_autocomplete_cache(string query);
     virtual Card * cards_random();
 
   private:
@@ -70,6 +71,7 @@ class Scry {
     virtual int datecheck(string datetime);
     virtual const year_month_day parse(string datetime);
     virtual vector<string> explode(const string& str, const char& ch);
+    virtual string implode(const vector<string>& strs, const char& ch);
     virtual string urlformat(string str);
     virtual string nameformat(string str);
     virtual string cachecard(List * list, bool recursive);
