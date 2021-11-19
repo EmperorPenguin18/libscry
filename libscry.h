@@ -25,6 +25,12 @@ class Card {
     Card(const char * rawjson);
   
     virtual string name();
+    virtual string mana_cost();
+    virtual string type_line();
+    virtual string oracle_text();
+    virtual string power();
+    virtual string toughness();
+    virtual bool dual_sided();
     virtual string json();
   private:
     Document data;
@@ -56,7 +62,7 @@ class Scry {
     virtual vector<string> cards_autocomplete(string query);
     virtual vector<string> cards_autocomplete_cache(string query);
     virtual Card * cards_random();
-
+    virtual vector<Card *> split(Card * card);
   private:
     CURL *easyhandle;
     sqlite3 *db;

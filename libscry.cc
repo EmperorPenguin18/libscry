@@ -344,12 +344,56 @@ Card * Scry::cards_random() {
   return card;
 }
 
+vector<Card *> Scry::split(Card * card) {
+  Document doc; doc.Parse(card->json().c_str());
+  vector<Card *> output;
+  StringBuffer buffer1;
+  Writer<StringBuffer> writer1(buffer1);
+  doc["card_faces"][0].Accept(writer1);
+  Card * card1 = new Card(buffer1.GetString());
+  output.push_back(card1); cards.push_back(card1);
+  StringBuffer buffer2;
+  Writer<StringBuffer> writer2(buffer2);
+  doc["card_faces"][1].Accept(writer2);
+  Card * card2 = new Card(buffer2.GetString());
+  output.push_back(card2); cards.push_back(card2);
+  return output;
+}
+
 Card::Card(const char * rawjson) {
   data.Parse(rawjson);
 }
 
 string Card::name() {
   return data["name"].GetString();
+}
+
+string Card::mana_cost() {
+  if (!data.HasMember("mana_cost")) return "";
+  return data["mana_cost"].GetString();
+}
+
+string Card::type_line() {
+  return data["type_line"].GetString();
+}
+
+string Card::oracle_text() {
+  if (!data.HasMember("oracle_text")) return "";
+  return data["oracle_text"].GetString();
+}
+
+string Card::power() {
+  if (!data.HasMember("power")) return "";
+  return data["power"].GetString();
+}
+
+string Card::toughness() {
+  if (!data.HasMember("toughness")) return "";
+  return data["toughness"].GetString();
+}
+
+bool Card::dual_sided() {
+  return data.HasMember("card_faces");
 }
 
 string Card::json() {
