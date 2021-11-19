@@ -347,16 +347,13 @@ Card * Scry::cards_random() {
 vector<Card *> Scry::split(Card * card) {
   Document doc; doc.Parse(card->json().c_str());
   vector<Card *> output;
-  StringBuffer buffer1;
-  Writer<StringBuffer> writer1(buffer1);
-  doc["card_faces"][0].Accept(writer1);
-  Card * card1 = new Card(buffer1.GetString());
-  output.push_back(card1); cards.push_back(card1);
-  StringBuffer buffer2;
-  Writer<StringBuffer> writer2(buffer2);
-  doc["card_faces"][1].Accept(writer2);
-  Card * card2 = new Card(buffer2.GetString());
-  output.push_back(card2); cards.push_back(card2);
+  for (int i = 0; i < doc["card_faces"].Size(); i++) {
+    StringBuffer buffer;
+    Writer<StringBuffer> writer(buffer);
+    doc["card_faces"][i].Accept(writer);
+    Card * card = new Card(buffer.GetString());
+    output.push_back(card); cards.push_back(card);
+  }
   return output;
 }
 
