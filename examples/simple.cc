@@ -1,3 +1,7 @@
+//Simple example
+//License is available at
+//https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
+
 #include <dlfcn.h>
 #include <iostream>
 #include <libscry.h>

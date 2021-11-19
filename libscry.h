@@ -1,3 +1,7 @@
+//libscry by Sebastien MacDougall-Landry
+//License is available at
+//https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
+
 #pragma once
 #include <string>
 #include <vector>
