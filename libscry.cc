@@ -51,9 +51,9 @@ Scry::Scry() {
     sqlite3_close(db);
     exit(1);
   }
-  db_exec("CREATE TABLE IF NOT EXISTS Cards(Name TEXT, Updated DATETIME, Data TEXT);");
-  db_exec("CREATE TABLE IF NOT EXISTS Lists(Query TEXT, Updated DATETIME, Names TEXT);");
-  db_exec("CREATE TABLE IF NOT EXISTS Autocompletes(Str TEXT, Updated DATETIME, Names TEXT);");
+  db_init("Cards");
+  db_init("Lists");
+  db_init("Autocompletes");
 }
 
 Scry::~Scry() {
@@ -97,42 +97,34 @@ string Scry::db_exec(string in) {
     exit(1);
   }
   string output;
-  char temp[7] = ""; strncpy(temp, cmd, 6); temp[6] = '\0';
-  if (strcmp(temp, "SELECT") == 0) output = string((char*)sqlite3_column_text(stmt, 0));
+  string temp = in.substr(0, 6);
+  if (temp == "SELECT") output = string((char*)sqlite3_column_text(stmt, 0));
   sqlite3_finalize(stmt);
   return output;
 }
 
+void Scry::db_init(string table) {
+  db_exec("CREATE TABLE IF NOT EXISTS " + table + "(Key TEXT, Updated DATETIME, Value TEXT);");
+}
+
 bool Scry::db_check(string table, string search) {
-  string cmd;
-  if (table == "Cards") cmd = "SELECT COUNT(1) FROM Cards WHERE Name='" + search + "';";
-  else if (table == "Lists") cmd = "SELECT COUNT(1) FROM Lists WHERE Query='" + search + "';";
-  else cmd = "SELECT COUNT(1) FROM Autocompletes WHERE Str='" + search + "';";
+  string cmd = "SELECT COUNT(1) FROM " + table + " WHERE Key='" + search + "';";
   if (db_exec(cmd).compare("1") == 0) return true;
   return false;
 }
 
 string Scry::db_read(string table, string search, string column) {
-  string cmd;
-  if (table == "Cards") cmd = "SELECT " + column + " FROM Cards WHERE Name='" + search + "';";
-  else if (table == "Lists") cmd = "SELECT " + column + " FROM Lists WHERE Query='" + search + "';";
-  else cmd = "SELECT " + column + " FROM Autocompletes WHERE Str='" + search + "';";
+  string cmd = "SELECT " + column + " FROM " + table + " WHERE Key='" + search + "';";
   return db_exec(cmd);
 }
 
 void Scry::db_write(string table, string key, string value) {
-  string cmd;
-  if (table == "Cards") cmd = "UPDATE Cards SET Updated=datetime(), Data='" + value + "' WHERE Name='" + key + "';";
-  else if (table == "Lists") cmd = "UPDATE Lists SET Updated=datetime(), Names='" + value + "' WHERE Query='" + key + "';";
-  else cmd = "UPDATE Autocompletes SET Updated=datetime(), Names='" + value + "' WHERE Str='" + key + "';";
+  string cmd = "UPDATE " + table + " SET Updated=datetime(), Value='" + value + "' WHERE Key='" + key + "';";
   db_exec(cmd);
 }
 
 void Scry::db_new(string table, string key, string value) {
-  string cmd;
-  if (table == "Cards") cmd = "INSERT INTO Cards VALUES ('" + key + "', datetime(), '" + value + "');";
-  else if (table == "Lists") cmd = "INSERT INTO Lists VALUES ('" + key + "', datetime(), '" + value + "');";
-  else cmd = "INSERT INTO Autocompletes VALUES ('" + key + "', datetime(), '" + value + "');";
+  string cmd = "INSERT INTO " + table + " VALUES ('" + key + "', datetime(), '" + value + "');";
   db_exec(cmd);
 }
 
@@ -258,10 +250,10 @@ List * Scry::cards_search_cache(string query) {
       lists.push_back(list);
       db_write("Lists", search, cachecard(list, true));
     } else {
-      vector<string> strvec = explode(db_read("Lists", search, "Names"), '\n');
+      vector<string> strvec = explode(db_read("Lists", search, "Value"), '\n');
       vector<Card *> content;
       for (int i = 0; i < strvec.size(); i++)
-	content.push_back( new Card( db_read("Cards", nameformat(strvec[i]), "Data").c_str() ) );
+	content.push_back( new Card( db_read("Cards", nameformat(strvec[i]), "Value").c_str() ) );
       list = new List( content );
       lists.push_back(list);
     }
@@ -271,7 +263,7 @@ List * Scry::cards_search_cache(string query) {
     lists.push_back(list);
     string names = cachecard(list, false);
     if (db_check("Lists", search)) {
-      string temp = nameformat( db_read("Lists", search, "Names") );
+      string temp = nameformat( db_read("Lists", search, "Value") );
       db_write("Lists", search, names + "\n" + temp);
     } else db_new("Lists", search, names);
   }
@@ -298,7 +290,7 @@ Card * Scry::cards_named_cache(string query) {
       card = cards_named(query);
       db_write("Cards", name, nameformat(card->json()));
     } else {
-      card = new Card( db_read("Cards", name, "Data").c_str() );
+      card = new Card( db_read("Cards", name, "Value").c_str() );
       cards.push_back(card);
     }
   } else {
@@ -330,7 +322,7 @@ vector<string> Scry::cards_autocomplete_cache(string query) {
       string namestr = implode(names, '\n');
       db_write("Autocompletes", query, nameformat(namestr));
     } else {
-      names = explode(db_read("Autocompletes", query, "Names"), '\n');
+      names = explode(db_read("Autocompletes", query, "Value"), '\n');
     }
   } else {
     names = cards_autocomplete(query);

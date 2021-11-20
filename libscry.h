@@ -74,6 +74,7 @@ class Scry {
     vector<List *> lists;
     virtual char * api_call(string url);
     virtual string db_exec(string in);
+    virtual void db_init(string table);
     virtual bool db_check(string table, string search);
     virtual string db_read(string table, string search, string column);
     virtual void db_write(string table, string key, string value);
