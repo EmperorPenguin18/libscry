@@ -22,6 +22,8 @@ make install #as root
 ```
 ## Documentation
 Available in [docs](docs/)
+## Projects using libscry
+[scrycli](https://github.com/EmperorPenguin18/scrycli)
 ## Legal
 From the API Docs:
 
