@@ -1,0 +1,35 @@
+\hypertarget{classList}{}\doxysection{List Class Reference}
+\label{classList}\index{List@{List}}
+
+
+This class is used to represent a list of cards (returned from a search for example)  
+
+
+
+
+{\ttfamily \#include $<$libscry.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classList_ad24780a3e766b17575a8a58149b8de43}\label{classList_ad24780a3e766b17575a8a58149b8de43}} 
+{\bfseries List} (\mbox{\hyperlink{classScry}{Scry}} $\ast$scry, const char $\ast$rawjson, bool cache)
+\item 
+\mbox{\Hypertarget{classList_adfff680f3695584d803448de6d17b70d}\label{classList_adfff680f3695584d803448de6d17b70d}} 
+{\bfseries List} (vector$<$ \mbox{\hyperlink{classCard}{Card}} $\ast$ $>$ input)
+\item 
+\mbox{\Hypertarget{classList_a0055cc72805b5c69a3566d4d25d46868}\label{classList_a0055cc72805b5c69a3566d4d25d46868}} 
+virtual vector$<$ \mbox{\hyperlink{classCard}{Card}} $\ast$ $>$ {\bfseries cards} ()
+\begin{DoxyCompactList}\small\item\em Returns a vector with all the cards on this page of the list. For cards on all pages see \mbox{\hyperlink{classList_a87c53df0e4968d8c6311f224a697b470}{allcards()}}. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classList_a87c53df0e4968d8c6311f224a697b470}\label{classList_a87c53df0e4968d8c6311f224a697b470}} 
+virtual vector$<$ \mbox{\hyperlink{classCard}{Card}} $\ast$ $>$ {\bfseries allcards} ()
+\begin{DoxyCompactList}\small\item\em Cumulates cards from all pages of the list and returns them as a vector. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class is used to represent a list of cards (returned from a search for example) 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+libscry.\+h\item 
+libscry.\+cc\end{DoxyCompactItemize}

@@ -1,0 +1,47 @@
+\hypertarget{classScry}{}\doxysection{Scry Class Reference}
+\label{classScry}\index{Scry@{Scry}}
+
+
+This class is the main interface to Scryfall. It handles all the API requests and caching.  
+
+
+
+
+{\ttfamily \#include $<$libscry.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classScry_a83a0ef1e2dc2f8ba573d3577501dce7b}\label{classScry_a83a0ef1e2dc2f8ba573d3577501dce7b}} 
+virtual \mbox{\hyperlink{classList}{List}} $\ast$ {\bfseries cards\+\_\+search} (string query)
+\begin{DoxyCompactList}\small\item\em Put in a query using Scryfall syntax (commander\+:g+type\+:legendary) as the argument. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_ae92a3963ff1368646c0df0b8b6d56fbf}\label{classScry_ae92a3963ff1368646c0df0b8b6d56fbf}} 
+virtual \mbox{\hyperlink{classList}{List}} $\ast$ {\bfseries cards\+\_\+search\+\_\+cache} (string query)
+\begin{DoxyCompactList}\small\item\em Cached version of cards\+\_\+search. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_aba0bfa893fded20dd44c1024268b3a9f}\label{classScry_aba0bfa893fded20dd44c1024268b3a9f}} 
+virtual \mbox{\hyperlink{classCard}{Card}} $\ast$ {\bfseries cards\+\_\+named} (string query)
+\begin{DoxyCompactList}\small\item\em Put in the name of a card as the argument. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_ae0d763c4bf6f8987565a854dca942548}\label{classScry_ae0d763c4bf6f8987565a854dca942548}} 
+virtual \mbox{\hyperlink{classCard}{Card}} $\ast$ {\bfseries cards\+\_\+named\+\_\+cache} (string query)
+\begin{DoxyCompactList}\small\item\em Cached version of cards\+\_\+named. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_ad285dfd051731724598c12c1804975d6}\label{classScry_ad285dfd051731724598c12c1804975d6}} 
+virtual vector$<$ string $>$ {\bfseries cards\+\_\+autocomplete} (string query)
+\begin{DoxyCompactList}\small\item\em Put in part of a card\textquotesingle{}s name as the argument. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_ad33c13ae3fd0826d8861e14cd6cdc3aa}\label{classScry_ad33c13ae3fd0826d8861e14cd6cdc3aa}} 
+virtual vector$<$ string $>$ {\bfseries cards\+\_\+autocomplete\+\_\+cache} (string query)
+\begin{DoxyCompactList}\small\item\em Cached version of cards\+\_\+autocomplete. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_ad837d491e12ec58a9e4bdfc2844038e1}\label{classScry_ad837d491e12ec58a9e4bdfc2844038e1}} 
+virtual \mbox{\hyperlink{classCard}{Card}} $\ast$ {\bfseries cards\+\_\+random} ()
+\begin{DoxyCompactList}\small\item\em Returns a randomly selected card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classScry_aad48881cdba9d185a2ff53334dc84eb3}\label{classScry_aad48881cdba9d185a2ff53334dc84eb3}} 
+virtual vector$<$ \mbox{\hyperlink{classCard}{Card}} $\ast$ $>$ {\bfseries split} (\mbox{\hyperlink{classCard}{Card}} $\ast$card)
+\begin{DoxyCompactList}\small\item\em Splits a card into it\textquotesingle{}s multiple faces. Useful because some cards won\textquotesingle{}t have certain data in the conglomerate. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class is the main interface to Scryfall. It handles all the API requests and caching. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+libscry.\+h\item 
+libscry.\+cc\end{DoxyCompactItemize}

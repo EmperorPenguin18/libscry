@@ -1,0 +1,92 @@
+\hypertarget{libscry_8h_source}{}\doxysection{libscry.\+h}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{1 \textcolor{comment}{//libscry by Sebastien MacDougall-\/Landry}}
+\DoxyCodeLine{2 \textcolor{comment}{//License is available at}}
+\DoxyCodeLine{3 \textcolor{comment}{//https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE}}
+\DoxyCodeLine{4 }
+\DoxyCodeLine{5 \textcolor{preprocessor}{\#pragma once}}
+\DoxyCodeLine{6 \textcolor{preprocessor}{\#include <string>}}
+\DoxyCodeLine{7 \textcolor{preprocessor}{\#include <vector>}}
+\DoxyCodeLine{8 \textcolor{preprocessor}{\#include <cstring>}}
+\DoxyCodeLine{9 \textcolor{preprocessor}{\#include <iostream>}}
+\DoxyCodeLine{10 \textcolor{preprocessor}{\#include <chrono>}}
+\DoxyCodeLine{11 \textcolor{preprocessor}{\#include <regex>}}
+\DoxyCodeLine{12 \textcolor{preprocessor}{\#include <curl/curl.h>}}
+\DoxyCodeLine{13 \textcolor{preprocessor}{\#include <sqlite3.h>}}
+\DoxyCodeLine{14 \textcolor{preprocessor}{\#include <rapidjson/document.h>}}
+\DoxyCodeLine{15 \textcolor{preprocessor}{\#include <rapidjson/writer.h>}}
+\DoxyCodeLine{16 \textcolor{preprocessor}{\#include <rapidjson/stringbuffer.h>}}
+\DoxyCodeLine{17 }
+\DoxyCodeLine{18 \textcolor{keyword}{using namespace }std;}
+\DoxyCodeLine{19 \textcolor{keyword}{using namespace }rapidjson;}
+\DoxyCodeLine{20 \textcolor{keyword}{using namespace }std::chrono;}
+\DoxyCodeLine{21 }
+\DoxyCodeLine{22 \textcolor{keyword}{class }\mbox{\hyperlink{classCard}{Card}};}
+\DoxyCodeLine{23 \textcolor{keyword}{class }\mbox{\hyperlink{classList}{List}};}
+\DoxyCodeLine{24 \textcolor{keyword}{class }\mbox{\hyperlink{classScry}{Scry}};}
+\DoxyCodeLine{25 }
+\DoxyCodeLine{27 \textcolor{keyword}{class }\mbox{\hyperlink{classCard}{Card}} \{}
+\DoxyCodeLine{28   \textcolor{keyword}{public}:}
+\DoxyCodeLine{29     \mbox{\hyperlink{classCard}{Card}}(\textcolor{keyword}{const} \textcolor{keywordtype}{char} * rawjson);}
+\DoxyCodeLine{30   }
+\DoxyCodeLine{32     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a614a347cba56f494443830b95f509c60}{name}}();}
+\DoxyCodeLine{34     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a015752347c4fdcd99f4e5e67fa58dce7}{mana\_cost}}();}
+\DoxyCodeLine{36     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a9b4ae24b362baf8b7685a08dec3f34cb}{type\_line}}();}
+\DoxyCodeLine{38     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a6dfc7f7ee78096a24c1d0eaa0d3bcea7}{oracle\_text}}();}
+\DoxyCodeLine{40     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a2019158130ec431bcbd7da81e2bd430e}{power}}();}
+\DoxyCodeLine{42     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a5764109aac819c9c2b21c5b0b0a2691a}{toughness}}();}
+\DoxyCodeLine{44     \textcolor{keyword}{virtual} \textcolor{keywordtype}{bool} \mbox{\hyperlink{classCard_a7e1daf48776a7816077ece1f7bed3f23}{dual\_sided}}();}
+\DoxyCodeLine{46     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} \mbox{\hyperlink{classCard_a02c5d509ff7886c8a872459757ba78b6}{json}}();}
+\DoxyCodeLine{47   \textcolor{keyword}{private}:}
+\DoxyCodeLine{48     Document data;}
+\DoxyCodeLine{49 \};}
+\DoxyCodeLine{50 }
+\DoxyCodeLine{52 \textcolor{keyword}{class }\mbox{\hyperlink{classList}{List}} \{}
+\DoxyCodeLine{53   \textcolor{keyword}{public}:}
+\DoxyCodeLine{54     \mbox{\hyperlink{classList}{List}}(\mbox{\hyperlink{classScry}{Scry}} * scry, \textcolor{keyword}{const} \textcolor{keywordtype}{char} * rawjson, \textcolor{keywordtype}{bool} cache);}
+\DoxyCodeLine{55     \mbox{\hyperlink{classList}{List}}(vector<Card *> input);}
+\DoxyCodeLine{56     \mbox{\hyperlink{classList}{\string~List}}();}
+\DoxyCodeLine{57   }
+\DoxyCodeLine{59     \textcolor{keyword}{virtual} vector<Card *> \mbox{\hyperlink{classList_a0055cc72805b5c69a3566d4d25d46868}{cards}}();}
+\DoxyCodeLine{61     \textcolor{keyword}{virtual} vector<Card *> \mbox{\hyperlink{classList_a87c53df0e4968d8c6311f224a697b470}{allcards}}();}
+\DoxyCodeLine{62   \textcolor{keyword}{private}:}
+\DoxyCodeLine{63     vector<Card *> content;}
+\DoxyCodeLine{64     \mbox{\hyperlink{classList}{List}} * nextpage;}
+\DoxyCodeLine{65 \};}
+\DoxyCodeLine{66 }
+\DoxyCodeLine{68 \textcolor{keyword}{class }\mbox{\hyperlink{classScry}{Scry}} \{}
+\DoxyCodeLine{69   \textcolor{keyword}{public}:}
+\DoxyCodeLine{70     \mbox{\hyperlink{classScry}{Scry}}();}
+\DoxyCodeLine{71     \mbox{\hyperlink{classScry}{\string~Scry}}();}
+\DoxyCodeLine{72 }
+\DoxyCodeLine{74     \textcolor{keyword}{virtual} \mbox{\hyperlink{classList}{List}} * \mbox{\hyperlink{classScry_a83a0ef1e2dc2f8ba573d3577501dce7b}{cards\_search}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{76     \textcolor{keyword}{virtual} \mbox{\hyperlink{classList}{List}} * \mbox{\hyperlink{classScry_ae92a3963ff1368646c0df0b8b6d56fbf}{cards\_search\_cache}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{78     \textcolor{keyword}{virtual} \mbox{\hyperlink{classCard}{Card}} * \mbox{\hyperlink{classScry_aba0bfa893fded20dd44c1024268b3a9f}{cards\_named}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{80     \textcolor{keyword}{virtual} \mbox{\hyperlink{classCard}{Card}} * \mbox{\hyperlink{classScry_ae0d763c4bf6f8987565a854dca942548}{cards\_named\_cache}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{82     \textcolor{keyword}{virtual} vector<string> \mbox{\hyperlink{classScry_ad285dfd051731724598c12c1804975d6}{cards\_autocomplete}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{84     \textcolor{keyword}{virtual} vector<string> \mbox{\hyperlink{classScry_ad33c13ae3fd0826d8861e14cd6cdc3aa}{cards\_autocomplete\_cache}}(\textcolor{keywordtype}{string} query);}
+\DoxyCodeLine{86     \textcolor{keyword}{virtual} \mbox{\hyperlink{classCard}{Card}} * \mbox{\hyperlink{classScry_ad837d491e12ec58a9e4bdfc2844038e1}{cards\_random}}();}
+\DoxyCodeLine{88     \textcolor{keyword}{virtual} vector<Card *> \mbox{\hyperlink{classScry_aad48881cdba9d185a2ff53334dc84eb3}{split}}(\mbox{\hyperlink{classCard}{Card}} * card);}
+\DoxyCodeLine{89   \textcolor{keyword}{private}:}
+\DoxyCodeLine{90     CURL *easyhandle;}
+\DoxyCodeLine{91     sqlite3 *db;}
+\DoxyCodeLine{92     vector<Card *> cards;}
+\DoxyCodeLine{93     vector<List *> lists;}
+\DoxyCodeLine{94     \textcolor{keyword}{virtual} \textcolor{keywordtype}{char} * api\_call(\textcolor{keywordtype}{string} url);}
+\DoxyCodeLine{95     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} db\_exec(\textcolor{keywordtype}{string} in);}
+\DoxyCodeLine{96     \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} db\_init(\textcolor{keywordtype}{string} table);}
+\DoxyCodeLine{97     \textcolor{keyword}{virtual} \textcolor{keywordtype}{bool} db\_check(\textcolor{keywordtype}{string} table, \textcolor{keywordtype}{string} search);}
+\DoxyCodeLine{98     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} db\_read(\textcolor{keywordtype}{string} table, \textcolor{keywordtype}{string} search, \textcolor{keywordtype}{string} column);}
+\DoxyCodeLine{99     \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} db\_write(\textcolor{keywordtype}{string} table, \textcolor{keywordtype}{string} key, \textcolor{keywordtype}{string} value);}
+\DoxyCodeLine{100     \textcolor{keyword}{virtual} \textcolor{keywordtype}{void} db\_new(\textcolor{keywordtype}{string} table, \textcolor{keywordtype}{string} key, \textcolor{keywordtype}{string} value);}
+\DoxyCodeLine{101     \textcolor{keyword}{virtual} \textcolor{keywordtype}{int} datecheck(\textcolor{keywordtype}{string} datetime);}
+\DoxyCodeLine{102     \textcolor{keyword}{virtual} \textcolor{keyword}{const} year\_month\_day parse(\textcolor{keywordtype}{string} datetime);}
+\DoxyCodeLine{103     \textcolor{keyword}{virtual} vector<string> explode(\textcolor{keyword}{const} \textcolor{keywordtype}{string}\& str, \textcolor{keyword}{const} \textcolor{keywordtype}{char}\& ch);}
+\DoxyCodeLine{104     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} implode(\textcolor{keyword}{const} vector<string>\& strs, \textcolor{keyword}{const} \textcolor{keywordtype}{char}\& ch);}
+\DoxyCodeLine{105     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} urlformat(\textcolor{keywordtype}{string} str);}
+\DoxyCodeLine{106     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} nameformat(\textcolor{keywordtype}{string} str);}
+\DoxyCodeLine{107     \textcolor{keyword}{virtual} \textcolor{keywordtype}{string} cachecard(\mbox{\hyperlink{classList}{List}} * list, \textcolor{keywordtype}{bool} recursive);}
+\DoxyCodeLine{108 \};}
+
+\end{DoxyCode}
