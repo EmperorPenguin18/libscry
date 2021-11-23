@@ -1,0 +1,50 @@
+\hypertarget{classCard}{}\doxysection{Card Class Reference}
+\label{classCard}\index{Card@{Card}}
+
+
+This class is used to represent a single card.  
+
+
+
+
+{\ttfamily \#include $<$libscry.\+h$>$}
+
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classCard_a4a9de61e1204358840f8c9b6b0975c3c}\label{classCard_a4a9de61e1204358840f8c9b6b0975c3c}} 
+{\bfseries Card} (const char $\ast$rawjson)
+\item 
+\mbox{\Hypertarget{classCard_a614a347cba56f494443830b95f509c60}\label{classCard_a614a347cba56f494443830b95f509c60}} 
+virtual string {\bfseries name} ()
+\begin{DoxyCompactList}\small\item\em Get the name (Storm Crow) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a015752347c4fdcd99f4e5e67fa58dce7}\label{classCard_a015752347c4fdcd99f4e5e67fa58dce7}} 
+virtual string {\bfseries mana\+\_\+cost} ()
+\begin{DoxyCompactList}\small\item\em Get the mana cost (\{1\}\{U\}) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a9b4ae24b362baf8b7685a08dec3f34cb}\label{classCard_a9b4ae24b362baf8b7685a08dec3f34cb}} 
+virtual string {\bfseries type\+\_\+line} ()
+\begin{DoxyCompactList}\small\item\em Get the type line (Creature -\/ Bird) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a6dfc7f7ee78096a24c1d0eaa0d3bcea7}\label{classCard_a6dfc7f7ee78096a24c1d0eaa0d3bcea7}} 
+virtual string {\bfseries oracle\+\_\+text} ()
+\begin{DoxyCompactList}\small\item\em Get the oracle text (Flying) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a2019158130ec431bcbd7da81e2bd430e}\label{classCard_a2019158130ec431bcbd7da81e2bd430e}} 
+virtual string {\bfseries power} ()
+\begin{DoxyCompactList}\small\item\em Get the power (1) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a5764109aac819c9c2b21c5b0b0a2691a}\label{classCard_a5764109aac819c9c2b21c5b0b0a2691a}} 
+virtual string {\bfseries toughness} ()
+\begin{DoxyCompactList}\small\item\em Get the toughness (2) of the card. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a7e1daf48776a7816077ece1f7bed3f23}\label{classCard_a7e1daf48776a7816077ece1f7bed3f23}} 
+virtual bool {\bfseries dual\+\_\+sided} ()
+\begin{DoxyCompactList}\small\item\em Returns true if the card has two faces, false otherwise. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classCard_a02c5d509ff7886c8a872459757ba78b6}\label{classCard_a02c5d509ff7886c8a872459757ba78b6}} 
+virtual string {\bfseries json} ()
+\begin{DoxyCompactList}\small\item\em Get the raw json text of the card provided by Scryfall. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+This class is used to represent a single card. 
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+libscry.\+h\item 
+libscry.\+cc\end{DoxyCompactItemize}

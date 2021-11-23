@@ -1,0 +1,54 @@
+A Magic\+: The Gathering library
+
+Uses Scryfall API to generate card data. \hypertarget{md_README_autotoc_md1}{}\doxysection{Dependencies}\label{md_README_autotoc_md1}
+curl, sqlite3 and rapidjson \hypertarget{md_README_autotoc_md2}{}\doxysection{Install}\label{md_README_autotoc_md2}
+Arch 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone https://github.com/EmperorPenguin18/libscry}
+\DoxyCodeLine{cd libscry}
+\DoxyCodeLine{makepkg -\/si}
+
+\end{DoxyCode}
+ Or just install from the \href{https://aur.archlinux.org/packages/libscry}{\texttt{ AUR}}
+
+Other Linux 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{git clone https://github.com/EmperorPenguin/libscry}
+\DoxyCodeLine{cd libscry}
+\DoxyCodeLine{make}
+\DoxyCodeLine{make install \#as root}
+
+\end{DoxyCode}
+ \hypertarget{md_README_autotoc_md3}{}\doxysection{Documentation}\label{md_README_autotoc_md3}
+Available in \href{docs/}{\texttt{ docs}} \hypertarget{md_README_autotoc_md4}{}\doxysection{Legal}\label{md_README_autotoc_md4}
+From the API Docs\+:
+
+$\ast$$\ast$\+\_\+\+Use of Scryfall Data\+\_\+$\ast$$\ast$
+
+{\itshape As part of the Wizards of the Coast Fan Content Policy, Scryfall provides our card data and image database free of charge for the primary purpose of creating additional Magic software, performing research, or creating community content (such as videos, set reviews, etc) about Magic and related products.}
+
+{\itshape When using Scryfall data, you must adhere to the following guidelines\+:}
+
+{\itshape -\/ You may not use Scryfall logos or use the Scryfall name in a way} {\itshape that implies Scryfall has endorsed you, your work, or your product.} ~\newline
+ {\itshape -\/ You may not require anyone to make payments, take surveys, agree to subscriptions,} {\itshape rate your content, or create accounts in exchange for access to Scryfall data.} ~\newline
+ {\itshape -\/ You may not use Scryfall data to create new games, or} {\itshape to imply the information and images are from any other game besides Magic\+: The Gathering.} ~\newline
+
+
+And for images\+:
+
+$\ast$$\ast$\+\_\+\+Image Guidelines\+\_\+$\ast$$\ast$
+
+{\itshape \mbox{\hyperlink{classCard}{Card}} images on Scryfall are copyright Wizards of the Coast (and/or their artist, for very old sets) and they are provided for the purpose of creating additional Magic software, or creating community content (such as videos, set reviews, etc) about Magic and related products.}
+
+{\itshape When using images from Scryfall, please adhere to the following guidelines\+:}
+
+{\itshape -\/ Do not cover, crop, or clip off the copyright or artist name on card images.} ~\newline
+ {\itshape -\/ Do not distort, skew, or stretch card images.} ~\newline
+ {\itshape -\/ Do not blur, sharpen, desaturate, or color-\/shift card images.} ~\newline
+ {\itshape -\/ Do not add your own watermarks, stamps, or logos to card images.} ~\newline
+ {\itshape -\/ Do not place card images in a way that implies someone other than Wizards of the Coast created the card or that it is from another game besides Magic\+: The Gathering.} ~\newline
+
+
+{\itshape In particular, when using the art\+\_\+crop\+:}
+
+{\itshape \mbox{\hyperlink{classList}{List}} the artist name and copyright elsewhere in the same interface presenting the art crop, or use the full card image elsewhere in the same interface. Users should be able to identify the artist and source of the image somehow.} 
