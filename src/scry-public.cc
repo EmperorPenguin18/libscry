@@ -6,7 +6,6 @@
 
 using namespace std;
 using namespace rapidjson;
-using namespace std::chrono;
 
 extern "C" Scry* create_object() {
   return new Scry;
@@ -37,113 +36,12 @@ Scry::~Scry() {
   }
 }
 
-const year_month_day Scry::parse(string datetime) {
-  string ys = datetime.substr(0,4);
-  string ms = datetime.substr(5,2);
-  string ds = datetime.substr(8,2);
-  year y(stoi(ys));
-  month m (stoi(ms));
-  day d (stoi(ds));
-  const year_month_day output(y, m, d);
-  return output;
-}
-
-int Scry::datecheck(string datetime) {
-  const time_point<system_clock> now{system_clock::now()};
-  const year_month_day ymd{floor<days>(now)};
-  const year_month_day old = parse(datetime);
-  
-  int output;
-  if (static_cast<int>(ymd.year()) > static_cast<int>(old.year())) {
-    output = 1;
-  } else {
-    if (static_cast<unsigned>(ymd.month()) > static_cast<unsigned>(old.month())) {
-      output = 1;
-    } else {
-      if (static_cast<unsigned>(ymd.day()) > static_cast<unsigned>(old.day()) + 7) {
-	output = 1;
-      } else if (static_cast<unsigned>(ymd.day()) == static_cast<unsigned>(old.day()) + 7) {
-	output = 0;
-      } else {
-	output = -1;
-      }
-    }
-  }
-
-  return output;
-}
-
-vector<string> Scry::explode(const string& str, const char& ch) {
-  string next;
-  vector<string> result;
-  for (string::const_iterator it = str.begin(); it != str.end(); it++) {
-    if (*it == ch) {
-      if (!next.empty()) {
-        result.push_back(next);
-        next.clear();
-      }
-    } else next += *it;
-  }
-  if (!next.empty()) result.push_back(next);
-  return result;
-}
-
-string Scry::implode(const vector<string>& strs, const char& ch) {
-  string result = "";
-  for (auto it = strs.begin(); it != strs.end(); it++) {
-    result += (*it) + ch;
-  }
-  return result;
-}
-
-string Scry::urlformat(string str) {
-  regex space(" ");
-  regex colon(":");
-  str = regex_replace(str, space, "%20");
-  str = regex_replace(str, colon, "%3A");
-  return str;
-}
-
-string Scry::nameformat(string str) {
-  regex apos("'");
-  str = regex_replace(str, apos, "''");
-  return str;
-}
-
 List * Scry::cards_search(string query) {
   query = urlformat(query);
   string url = "https://api.scryfall.com/cards/search?q=" + query;
   List * list = new List(wa->api_call(url));
   lists.push_back(list);
   return list;
-}
-
-string Scry::cachecard(List * list, bool recursive) {
-  string names = "";
-  vector <Card *> cards = allcards(list, true);
-  if (recursive) {
-    for (int i = 0; i < cards.size(); i++) {
-      string name = nameformat(cards[i]->name());
-      names += name + "\n";
-      string temp = nameformat(cards[i]->json());
-      if (i < list->cards().size()) {
-        if (da->db_check("Cards", name)) {
-          da->db_write("Cards", name, temp);
-        } else da->db_new("Cards", name, temp);
-      }
-    }
-  } else {
-    for (int i = 0; i < cards.size(); i++) {
-      string name = nameformat(cards[i]->name());
-      names += name + "\n";
-      string temp = nameformat(cards[i]->json());
-      if (da->db_check("Cards", name)) {
-        da->db_write("Cards", name, temp);
-      } else da->db_new("Cards", name, temp);
-    }
-  }
-  names.pop_back();
-  return names;
 }
 
 List * Scry::cards_search_cache(string query) {
@@ -154,16 +52,16 @@ List * Scry::cards_search_cache(string query) {
   string search = string(sm[0]).substr(0, sm[0].length()-2);
   if (size(search) < 1) search = query;
   if (da->db_check("Lists", search)) {
-    if (datecheck( da->db_read("Lists", search, "Updated") ) == 1) {
+    if (da->datecheck("Lists", search) == 1) {
       string url = "https://api.scryfall.com/cards/search?q=" + query;
       list = new List(wa->api_call(url));
       lists.push_back(list);
       da->db_write("Lists", search, cachecard(list, true));
     } else {
-      vector<string> strvec = explode(da->db_read("Lists", search, "Value"), '\n');
+      vector<string> strvec = explode(da->db_read("Lists", search), '\n');
       vector<Card *> content;
       for (int i = 0; i < strvec.size(); i++)
-	content.push_back( new Card( da->db_read("Cards", nameformat(strvec[i]), "Value").c_str() ) );
+	content.push_back( new Card( da->db_read("Cards", nameformat(strvec[i])).c_str() ) );
       list = new List( content );
       lists.push_back(list);
     }
@@ -173,7 +71,7 @@ List * Scry::cards_search_cache(string query) {
     lists.push_back(list);
     string names = cachecard(list, false);
     if (da->db_check("Lists", search)) {
-      string temp = nameformat( da->db_read("Lists", search, "Value") );
+      string temp = nameformat( da->db_read("Lists", search) );
       da->db_write("Lists", search, names + "\n" + temp);
     } else da->db_new("Lists", search, names);
   }
@@ -196,11 +94,11 @@ Card * Scry::cards_named_cache(string query) {
   string name = nameformat(query);
 
   if (da->db_check("Cards", name)) {
-    if (datecheck( da->db_read("Cards", name, "Updated") ) == 1) {
+    if (da->datecheck("Cards", name) == 1) {
       card = cards_named(query);
       da->db_write("Cards", name, nameformat(card->json()));
     } else {
-      card = new Card( da->db_read("Cards", name, "Value").c_str() );
+      card = new Card( da->db_read("Cards", name).c_str() );
       cards.push_back(card);
     }
   } else {
@@ -227,12 +125,12 @@ vector<string> Scry::cards_autocomplete_cache(string query) {
   vector<string> names;
 
   if (da->db_check("Autocompletes", query)) {
-    if (datecheck( da->db_read("Autocompletes", query, "Updated") ) == 1) {
+    if (da->datecheck("Autocompletes", query) == 1) {
       names = cards_autocomplete(query);
       string namestr = implode(names, '\n');
       da->db_write("Autocompletes", query, nameformat(namestr));
     } else {
-      names = explode(da->db_read("Autocompletes", query, "Value"), '\n');
+      names = explode(da->db_read("Autocompletes", query), '\n');
     }
   } else {
     names = cards_autocomplete(query);

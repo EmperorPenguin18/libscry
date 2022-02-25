@@ -11,6 +11,7 @@
 using namespace std;
 using namespace rapidjson;
 
+///This class is used to represent a single card
 class Card {
   public:
     Card(const char * rawjson);

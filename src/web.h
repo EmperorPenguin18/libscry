@@ -17,4 +17,9 @@ class WebAccess {
     virtual char * api_call(string url);
   private:
     CURL *easyhandle;
+    struct memory {
+      char *response;
+      size_t size;
+    };
+    static size_t cb(void *data, size_t size, size_t nmemb, void *userp);
 };

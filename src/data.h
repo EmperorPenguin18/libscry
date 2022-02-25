@@ -5,6 +5,7 @@
 #pragma once
 #include <string>
 #include <cstring>
+#include <chrono>
 #include <sqlite3.h>
 
 using namespace std;
@@ -17,9 +18,10 @@ class DataAccess {
 
     virtual void db_init(string table);
     virtual bool db_check(string table, string search);
-    virtual string db_read(string table, string search, string column);
+    virtual string db_read(string table, string search);
     virtual void db_write(string table, string key, string value);
     virtual void db_new(string table, string key, string value);
+    virtual int datecheck(string table, string search);
   private:
     sqlite3 *db;
     virtual string db_exec(string in);

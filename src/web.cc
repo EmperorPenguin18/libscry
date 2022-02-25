@@ -6,12 +6,20 @@
 
 using namespace std;
 
-struct memory {
-  char *response;
-  size_t size;
-};
+WebAccess::WebAccess() {
+  curl_global_init(CURL_GLOBAL_ALL);
+  easyhandle = curl_easy_init();
+  curl_easy_setopt(easyhandle, CURLOPT_WRITEFUNCTION, cb);
+  curl_easy_setopt(easyhandle, CURLOPT_FOLLOWLOCATION, 1);
+  curl_easy_setopt(easyhandle, CURLOPT_HTTPGET, 1);
+}
 
-static size_t cb(void *data, size_t size, size_t nmemb, void *userp) {
+WebAccess::~WebAccess() {
+  curl_easy_cleanup(easyhandle);
+  curl_global_cleanup();
+}
+
+size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
 
@@ -24,19 +32,6 @@ static size_t cb(void *data, size_t size, size_t nmemb, void *userp) {
   mem->response[mem->size] = 0;
 
   return realsize;
-}
-
-WebAccess::WebAccess() {
-  curl_global_init(CURL_GLOBAL_ALL);
-  easyhandle = curl_easy_init();
-  curl_easy_setopt(easyhandle, CURLOPT_WRITEFUNCTION, cb);
-  curl_easy_setopt(easyhandle, CURLOPT_FOLLOWLOCATION, 1);
-  curl_easy_setopt(easyhandle, CURLOPT_HTTPGET, 1);
-}
-
-WebAccess::~WebAccess() {
-  curl_easy_cleanup(easyhandle);
-  curl_global_cleanup();
 }
 
 char * WebAccess::api_call(string url) {

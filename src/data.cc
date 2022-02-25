@@ -5,6 +5,7 @@
 #include "data.h"
 
 using namespace std;
+using namespace std::chrono;
 
 DataAccess::DataAccess() {
   char * cachedir = getenv("XDG_CACHE_HOME");
@@ -43,6 +44,37 @@ string DataAccess::db_exec(string in) {
   return output;
 }
 
+int DataAccess::datecheck(string table, string search) {
+  string cmd = "SELECT Updated FROM " + table + " WHERE Key='" + search + "';";
+  string datetime = db_exec(cmd);
+
+  const time_point<system_clock> now{system_clock::now()};
+  const year_month_day ymd{floor<days>(now)};
+  const year_month_day old(
+		  static_cast<year>(stoi(datetime.substr(0,4))),
+		  static_cast<month>(stoi(datetime.substr(5,2))),
+		  static_cast<day>(stoi(datetime.substr(8,2))));
+  
+  int output;
+  if (static_cast<int>(ymd.year()) > static_cast<int>(old.year())) {
+    output = 1;
+  } else {
+    if (static_cast<unsigned>(ymd.month()) > static_cast<unsigned>(old.month())) {
+      output = 1;
+    } else {
+      if (static_cast<unsigned>(ymd.day()) > static_cast<unsigned>(old.day()) + 7) {
+	output = 1;
+      } else if (static_cast<unsigned>(ymd.day()) == static_cast<unsigned>(old.day()) + 7) {
+	output = 0;
+      } else {
+	output = -1;
+      }
+    }
+  }
+
+  return output;
+}
+
 void DataAccess::db_init(string table) {
   db_exec("CREATE TABLE IF NOT EXISTS " + table + "(Key TEXT, Updated DATETIME, Value TEXT);");
 }
@@ -53,8 +85,8 @@ bool DataAccess::db_check(string table, string search) {
   return false;
 }
 
-string DataAccess::db_read(string table, string search, string column) {
-  string cmd = "SELECT " + column + " FROM " + table + " WHERE Key='" + search + "';";
+string DataAccess::db_read(string table, string search) {
+  string cmd = "SELECT Value FROM " + table + " WHERE Key='" + search + "';";
   return db_exec(cmd);
 }
 

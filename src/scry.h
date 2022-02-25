@@ -4,17 +4,13 @@
 
 #pragma once
 #include <iostream>
-#include <chrono>
 #include "web.h"
 #include "data.h"
 #include "list.h"
 #include "card.h"
 
 using namespace std;
-using namespace rapidjson;
-using namespace std::chrono;
 
-///This class is used to represent a single card
 ///This class is the main interface to Scryfall. It handles all the API requests and caching.
 class Scry {
   public:
@@ -44,8 +40,6 @@ class Scry {
     DataAccess * da;
     vector<Card *> cards;
     vector<List *> lists;
-    virtual int datecheck(string datetime);
-    virtual const year_month_day parse(string datetime);
     virtual vector<string> explode(const string& str, const char& ch);
     virtual string implode(const vector<string>& strs, const char& ch);
     virtual string urlformat(string str);
