@@ -1,10 +1,13 @@
 build: src/*.cc
-	g++ -std=c++20 -lcurl -lsqlite3 -fPIC -shared src/*.cc -o libscry.so
+	g++ -g -Og -D DEBUG -rdynamic -std=c++20 -fPIC -shared src/*.cc -o libscry.so
 
-install: libscry.h libscry.so
-	mkdir -p /usr/include/
+release: src/*.cc
+	g++ -std=c++20 -fPIC -shared src/*.cc -o libscry.so
+
+install: src/*.h libscry.so
+	mkdir -p /usr/include/scry
 	mkdir -p /usr/lib/
-	cp libscry.h /usr/include/libscry.h
+	cp src/*.h /usr/include/scry/
 	mv libscry.so /usr/lib/libscry.so
 
 clean:

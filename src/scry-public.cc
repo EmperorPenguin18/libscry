@@ -4,6 +4,31 @@
 
 #include "scry.h"
 
+#ifdef DEBUG
+void print_stacktrace(int signum) {
+  int nptrs;
+  void *buffer[BT_BUF_SIZE];
+  char **strings;
+
+  nptrs = backtrace(buffer, BT_BUF_SIZE);
+  printf("backtrace() returned %d addresses\n", nptrs);
+
+  /* The call backtrace_symbols_fd(buffer, nptrs, STDOUT_FILENO)
+     would produce similar output to the following: */
+
+  strings = backtrace_symbols(buffer, nptrs);
+  if (strings == NULL) {
+     perror("backtrace_symbols");
+     exit(signum);
+  }
+
+  for (int j = 0; j < nptrs; j++)
+      printf("%s\n", strings[j]);
+
+  free(strings);
+}
+#endif
+
 using namespace std;
 using namespace rapidjson;
 
@@ -16,6 +41,10 @@ extern "C" void destroy_object( Scry* object ) {
 }
 
 Scry::Scry() {
+#ifdef DEBUG
+  signal(SIGSEGV, print_stacktrace);
+  signal(SIGABRT, print_stacktrace);
+#endif
   wa = new WebAccess();
   da = new DataAccess();
   da->db_init("Cards");

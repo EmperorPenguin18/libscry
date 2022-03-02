@@ -9,6 +9,13 @@
 #include "list.h"
 #include "card.h"
 
+#ifdef DEBUG
+  #include <csignal>
+  #include <execinfo.h>
+  #define BT_BUF_SIZE 100
+  void print_stacktrace(int);
+#endif
+
 using namespace std;
 
 ///This class is the main interface to Scryfall. It handles all the API requests and caching.

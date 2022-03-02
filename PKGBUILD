@@ -13,7 +13,7 @@ sha256sums=('3c35bee0e7383f704f2ff59ae100a708c0c36772d0b1b375c481587a6cea3622')
 
 build () {
   cd "$srcdir/$pkgname-$pkgver"
-  g++ -std=c++20 -lcurl -lsqlite3 -fPIC -shared src/*.cc -o libscry.so
+  g++ -std=c++20 -fPIC -shared src/*.cc -o libscry.so
 }
 
 package () {

@@ -8,6 +8,19 @@ using namespace std;
 using namespace std::chrono;
 
 DataAccess::DataAccess() {
+  sqlite3_lib = dlopen("libsqlite3.so", RTLD_LAZY | RTLD_DEEPBIND);
+  if (!sqlite3_lib) {
+    fprintf(stderr, "%s\n", dlerror());
+    exit(EXIT_FAILURE);
+  }
+  sqlite3_open = reinterpret_cast<o_handle>(dlsym(sqlite3_lib, "sqlite3_open"));
+  sqlite3_errmsg = reinterpret_cast<e_handle>(dlsym(sqlite3_lib, "sqlite3_errmsg"));
+  sqlite3_close = reinterpret_cast<c_handle>(dlsym(sqlite3_lib, "sqlite3_close"));
+  sqlite3_prepare_v2 = reinterpret_cast<p_handle>(dlsym(sqlite3_lib, "sqlite3_prepare_v2"));
+  sqlite3_step = reinterpret_cast<s_handle>(dlsym(sqlite3_lib, "sqlite3_step"));
+  sqlite3_finalize = reinterpret_cast<f_handle>(dlsym(sqlite3_lib, "sqlite3_finalize"));
+  sqlite3_column_text = reinterpret_cast<t_handle>(dlsym(sqlite3_lib, "sqlite3_column_text"));
+
   char * cachedir = getenv("XDG_CACHE_HOME");
   int rc;
   if (cachedir != NULL) rc = sqlite3_open(strcat(cachedir, "/libscry.db"), &db);
@@ -21,6 +34,7 @@ DataAccess::DataAccess() {
 
 DataAccess::~DataAccess() {
   sqlite3_close(db);
+  dlclose(sqlite3_lib);
 }
 
 string DataAccess::db_exec(string in) {

@@ -7,6 +7,18 @@
 using namespace std;
 
 WebAccess::WebAccess() {
+  curl_lib = dlopen("libcurl.so", RTLD_LAZY | RTLD_DEEPBIND);
+  if (!curl_lib) {
+    fprintf(stderr, "%s\n", dlerror());
+    exit(EXIT_FAILURE);
+  }
+  curl_global_init = reinterpret_cast<cgi_handle>(dlsym(curl_lib, "curl_global_init"));
+  curl_easy_init = reinterpret_cast<cei_handle>(dlsym(curl_lib, "curl_easy_init"));
+  curl_easy_setopt = reinterpret_cast<ces_handle>(dlsym(curl_lib, "curl_easy_setopt"));
+  curl_easy_perform = reinterpret_cast<cep_handle>(dlsym(curl_lib, "curl_easy_perform"));
+  curl_easy_cleanup = reinterpret_cast<cec_handle>(dlsym(curl_lib, "curl_easy_cleanup"));
+  curl_global_cleanup = reinterpret_cast<cgc_handle>(dlsym(curl_lib, "curl_global_cleanup"));
+
   curl_global_init(CURL_GLOBAL_ALL);
   easyhandle = curl_easy_init();
   curl_easy_setopt(easyhandle, CURLOPT_WRITEFUNCTION, cb);
@@ -17,6 +29,7 @@ WebAccess::WebAccess() {
 WebAccess::~WebAccess() {
   curl_easy_cleanup(easyhandle);
   curl_global_cleanup();
+  dlclose(curl_lib);
 }
 
 size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {

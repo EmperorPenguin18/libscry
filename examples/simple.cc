@@ -4,14 +4,14 @@
 
 #include <dlfcn.h>
 #include <iostream>
-#include <libscry.h>
+#include <scry/scry.h>
 
 using namespace std;
 
 int main(int argc, char **argv)
 {
   /* This block is what allows the library to be dynamic. */
-  void* handle = dlopen("/usr/lib/libscry.so", RTLD_LAZY);
+  void* handle = dlopen("libscry.so", RTLD_LAZY);
   Scry* (*create)();
   void (*destroy)(Scry*);
   create = (Scry* (*)())dlsym(handle, "create_object");
@@ -30,4 +30,4 @@ int main(int argc, char **argv)
   destroy(scry);
 }
 
-/* Compiled with `g++ -std=c++20 simple.cc -ldl -o simple`. */
+/* Compiled with `g++ -std=c++20 simple.cc -o simple`. */
