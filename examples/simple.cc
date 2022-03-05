@@ -30,4 +30,4 @@ int main(int argc, char **argv)
   destroy(scry);
 }
 
-/* Compiled with `g++ -std=c++20 simple.cc -o simple`. */
+/* Compiled with `g++ simple.cc -o simple`. */

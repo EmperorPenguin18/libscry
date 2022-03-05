@@ -43,30 +43,36 @@ string Scry::nameformat(string str) {
   return str;
 }
 
-string Scry::cachecard(List * list, bool recursive) {
+string Scry::cachecard(List * list) {
   string names = "";
-  vector <Card *> cards = allcards(list, true);
-  if (recursive) {
-    for (int i = 0; i < cards.size(); i++) {
-      string name = nameformat(cards[i]->name());
-      names += name + "\n";
-      string temp = nameformat(cards[i]->json());
-      if (i < list->cards().size()) {
-        if (da->db_check("Cards", name)) {
-          da->db_write("Cards", name, temp);
-        } else da->db_new("Cards", name, temp);
-      }
-    }
-  } else {
-    for (int i = 0; i < cards.size(); i++) {
-      string name = nameformat(cards[i]->name());
-      names += name + "\n";
-      string temp = nameformat(cards[i]->json());
-      if (da->db_check("Cards", name)) {
-        da->db_write("Cards", name, temp);
-      } else da->db_new("Cards", name, temp);
-    }
+  vector <Card *> cards = list->cards();
+  for (int i = 0; i < cards.size(); i++) {
+    string name = nameformat(cards[i]->name());
+    names += name + "\n";
+    string temp = nameformat(cards[i]->json());
+    if (da->db_check("Cards", name)) {
+      da->db_write("Cards", name, temp);
+    } else da->db_new("Cards", name, temp);
   }
   names.pop_back();
   return names;
+}
+
+List * Scry::allcards(List * list) {
+  List * newlist;
+  if (list->nextPage() != "") {
+    Document doc; doc.Parse(list->json().c_str());
+    unsigned int pages = static_cast<int>(ceil(doc["total_cards"].GetInt()/170));
+#ifdef DEBUG
+    cout << "# of pages: " << to_string(pages) << endl;
+#endif
+    vector<string> urls;
+    for (int i = 2; i <= pages; i++) urls.push_back(list->nextPage() + to_string(i));
+    vector<string> one; one.push_back(list->json());
+    vector<string> two = wa->api_call(urls);
+    two.insert(two.begin(), one.begin(), one.end());
+    newlist = new List(two);
+    lists.push_back(newlist);
+  } else newlist = list;
+  return newlist;
 }

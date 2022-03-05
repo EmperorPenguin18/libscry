@@ -5,7 +5,10 @@
 #include "scry.h"
 
 #ifdef DEBUG
+const char * signals[31] = {"SIGHUP", "SIGINT", "SIGQUIT", "SIGILL", "SIGTRAP", "SIGABR", "SIGBUS", "SIGFPE", "SIGKILL", "SIGUSR1", "SIGSEGV", "SIGUSR2", "SIGPIPE", "SIGALRM", "SIGTERM", "SIGSTKFLT", "SIGCHLD", "SIGCONT", "SIGSTOP", "SIGTSTP", "SIGTTIN", "SIGTTOU", "SIGURG", "SIGXCPU", "SIGXFSZ", "SIGVTALRM", "SIGPROF", "SIGWINCH", "SIGIO", "SIGPWR", "SIGUNUSED"};
+
 void print_stacktrace(int signum) {
+  printf("\nReceived signal %d: %s\n", signum, signals[signum-1]);
   int nptrs;
   void *buffer[BT_BUF_SIZE];
   char **strings;
@@ -26,6 +29,7 @@ void print_stacktrace(int signum) {
       printf("%s\n", strings[j]);
 
   free(strings);
+  exit(signum);
 }
 #endif
 
@@ -68,26 +72,31 @@ Scry::~Scry() {
 List * Scry::cards_search(string query) {
   query = urlformat(query);
   string url = "https://api.scryfall.com/cards/search?q=" + query;
+#ifdef DEBUG
+  cout << "URL: " << url << endl;
+#endif
   List * list = new List(wa->api_call(url));
+#ifdef DEBUG
+  cout << "First card: " << list->cards()[0]->name() << endl;
+#endif
   lists.push_back(list);
-  return list;
+  List * full_list = allcards(list);
+#ifdef DEBUG
+  cout << "Full first card: " << full_list->cards()[0]->name() << endl;
+#endif
+  return full_list;
 }
 
 List * Scry::cards_search_cache(string query) {
   query = urlformat(query);
   List * list;
 
-  regex pages(".*&p"); smatch sm; regex_search(query, sm, pages);
-  string search = string(sm[0]).substr(0, sm[0].length()-2);
-  if (size(search) < 1) search = query;
-  if (da->db_check("Lists", search)) {
-    if (da->datecheck("Lists", search) == 1) {
-      string url = "https://api.scryfall.com/cards/search?q=" + query;
-      list = new List(wa->api_call(url));
-      lists.push_back(list);
-      da->db_write("Lists", search, cachecard(list, true));
+  if (da->db_check("Lists", query)) {
+    if (da->datecheck("Lists", query) == 1) {
+      list = cards_search(query);
+      da->db_write("Lists", query, cachecard(list));
     } else {
-      vector<string> strvec = explode(da->db_read("Lists", search), '\n');
+      vector<string> strvec = explode(da->db_read("Lists", query), '\n');
       vector<Card *> content;
       for (int i = 0; i < strvec.size(); i++)
 	content.push_back( new Card( da->db_read("Cards", nameformat(strvec[i])).c_str() ) );
@@ -95,14 +104,8 @@ List * Scry::cards_search_cache(string query) {
       lists.push_back(list);
     }
   } else {
-    string url = "https://api.scryfall.com/cards/search?q=" + query;
-    list = new List(wa->api_call(url));
-    lists.push_back(list);
-    string names = cachecard(list, false);
-    if (da->db_check("Lists", search)) {
-      string temp = nameformat( da->db_read("Lists", search) );
-      da->db_write("Lists", search, names + "\n" + temp);
-    } else da->db_new("Lists", search, names);
+    list = cards_search(query);
+    da->db_new("Lists", query, cachecard(list));
   }
 
   return list;
@@ -186,17 +189,6 @@ vector<Card *> Scry::split(Card * card) {
     doc["card_faces"][i].Accept(writer);
     Card * card = new Card(buffer.GetString());
     output.push_back(card); cards.push_back(card);
-  }
-  return output;
-}
-
-vector<Card *> Scry::allcards(List * list, bool cache) {
-  vector<Card *> output = list->cards();
-  if (list->nextPage() != "") {
-    vector<Card *> append;
-    if (cache) append = allcards(cards_search_cache(list->nextPage()), true);
-    else append = allcards(cards_search(list->nextPage()), false);
-    output.insert(output.end(), append.begin(), append.end());
   }
   return output;
 }

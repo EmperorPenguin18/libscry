@@ -4,6 +4,7 @@
 
 #pragma once
 #include <iostream>
+#include <cmath>
 #include "web.h"
 #include "data.h"
 #include "list.h"
@@ -40,8 +41,6 @@ class Scry {
     virtual Card * cards_random();
     ///Splits a card into it's multiple faces. Useful because some cards won't have certain data in the conglomerate.
     virtual vector<Card *> split(Card * card);
-    ///Returns all cards from a search using the list representing the first page
-    virtual vector<Card *> allcards(List * list, bool cache);
   private:
     WebAccess * wa;
     DataAccess * da;
@@ -51,5 +50,6 @@ class Scry {
     virtual string implode(const vector<string>& strs, const char& ch);
     virtual string urlformat(string str);
     virtual string nameformat(string str);
-    virtual string cachecard(List * list, bool recursive);
+    virtual string cachecard(List * list);
+    virtual List * allcards(List * list);
 };

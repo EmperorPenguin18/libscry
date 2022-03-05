@@ -8,21 +8,45 @@ using namespace std;
 using namespace rapidjson;
 
 List::List(const char * rawjson) {
-  Document doc;
-  doc.Parse(rawjson);
-  for (int i = 0; i < doc["data"].Size(); i++) {
+  construct(rawjson);
+}
+
+List::List(vector<string> rawjsons) {
+  string str = "";
+  for (int i = 0; i < rawjsons.size(); i++) {
+    str += rawjsons[i] + '\n';
+#ifdef DEBUG
+    cout << "Last ten chars: " << rawjsons[i].substr(rawjsons[i].length()-10, 10) << endl;
+    cout << "Size: " << rawjsons[i].size() << endl << "Capacity: " << rawjsons[i].capacity() << endl;
+#endif
+    construct(rawjsons[i].c_str());
+  }
+  data.Parse(str.c_str());
+}
+
+void List::construct(const char * rawjson) {
+  data.Parse(rawjson);
+#ifdef DEBUG
+  if (data.IsObject()) cout << "JSON is valid" << endl;
+#endif
+  for (int i = 0; i < data["data"].Size(); i++) {
     StringBuffer buffer;
     Writer<StringBuffer> writer(buffer);
-    doc["data"][i].Accept(writer);
+    data["data"][i].Accept(writer);
     content.push_back(new Card(buffer.GetString()));
   }
-  if (doc["has_more"].GetBool()) {
-    string url = doc["next_page"].GetString();
+  if (data["has_more"].GetBool()) {
+    string url = data["next_page"].GetString();
+    regex dmn(".*\\?");
     regex q("q=.*&");
     regex page("page=.*&q");
-    smatch sm1; regex_search(url, sm1, q);
-    smatch sm2; regex_search(url, sm2, page);
-    nextpage = string(sm1[0]).substr(2, sm1[0].length()-2) + string(sm2[0]).substr(0, sm2[0].length()-2);
+    smatch sm1; regex_search(url, sm1, dmn);
+    smatch sm2; regex_search(url, sm2, q);
+    smatch sm3; regex_search(url, sm3, page);
+#ifdef DEBUG
+    cout << "Regex 1: " << sm1[0] << endl << "Regex 2: " << sm2[0] << endl << "Regex 3: " << sm3[0] << endl;
+#endif
+    nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, sm3[0].length()-3);
   } else nextpage = "";
 }
 
@@ -44,4 +68,11 @@ vector<Card *> List::cards() {
 
 string List::nextPage() {
   return nextpage;
+}
+
+string List::json() {
+  StringBuffer buffer;
+  Writer<StringBuffer> writer(buffer);
+  data.Accept(writer);
+  return buffer.GetString();
 }

@@ -10,10 +10,15 @@
 #include <rapidjson/stringbuffer.h>
 #include "card.h"
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 ///This class is used to represent a list of cards (returned from a search for example)
 class List {
   public:
     List(const char * rawjson);
+    List(vector<string> rawjsons);
     List(vector<Card *> input);
     ~List();
   
@@ -21,8 +26,12 @@ class List {
     virtual vector<Card *> cards();
     ///Returns the string of the url for the next page of a search result
     virtual string nextPage();
+    ///Gets the raw json text of the card provided by Scryfall.
+    virtual string json();
   private:
+    Document data;
     vector<Card *> content;
     string nextpage;
+    void construct(const char *);
 };
 
