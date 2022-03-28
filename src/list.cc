@@ -16,8 +16,8 @@ List::List(vector<string> rawjsons) {
   for (int i = 0; i < rawjsons.size(); i++) {
     str += rawjsons[i] + '\n';
 #ifdef DEBUG
-    cout << "Last ten chars: " << rawjsons[i].substr(rawjsons[i].length()-10, 10) << endl;
-    cout << "Size: " << rawjsons[i].size() << endl << "Capacity: " << rawjsons[i].capacity() << endl;
+    cerr << "Last ten chars: " << rawjsons[i].substr(rawjsons[i].length()-10, 10) << endl;
+    cerr << "Size: " << rawjsons[i].size() << endl << "Capacity: " << rawjsons[i].capacity() << endl;
 #endif
     construct(rawjsons[i].c_str());
   }
@@ -27,7 +27,7 @@ List::List(vector<string> rawjsons) {
 void List::construct(const char * rawjson) {
   data.Parse(rawjson);
 #ifdef DEBUG
-  if (data.IsObject()) cout << "JSON is valid" << endl;
+  if (data.IsObject()) cerr << "JSON is valid" << endl;
 #endif
   for (int i = 0; i < data["data"].Size(); i++) {
     StringBuffer buffer;
@@ -44,7 +44,7 @@ void List::construct(const char * rawjson) {
     smatch sm2; regex_search(url, sm2, q);
     smatch sm3; regex_search(url, sm3, page);
 #ifdef DEBUG
-    cout << "Regex 1: " << sm1[0] << endl << "Regex 2: " << sm2[0] << endl << "Regex 3: " << sm3[0] << endl;
+    cerr << "Regex 1: " << sm1[0] << endl << "Regex 2: " << sm2[0] << endl << "Regex 3: " << sm3[0] << endl;
 #endif
     nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, sm3[0].length()-3);
   } else nextpage = "";

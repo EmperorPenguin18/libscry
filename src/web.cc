@@ -5,22 +5,35 @@
 #include "web.h"
 
 using namespace std;
+using namespace std::chrono;
 
 WebAccess::WebAccess() {
+  delay = duration<long, ratio<1,1000>>(50);
   conn_per_thread = 10;
   construct();
 }
 
 WebAccess::WebAccess(vector<string> approved_urls) : approved_urls(approved_urls) {
+  delay = duration<long, ratio<1,1000>>(50);
   conn_per_thread = 10;
   construct();
 }
 
-WebAccess::WebAccess(long conn_per_thread) : conn_per_thread(conn_per_thread) {
+WebAccess::WebAccess(vector<string> approved_urls, long delay) : approved_urls(approved_urls), delay(delay) {
+  conn_per_thread = 10;
   construct();
 }
 
-WebAccess::WebAccess(vector<string> approved_urls, long conn_per_thread) : approved_urls(approved_urls), conn_per_thread(conn_per_thread) {
+WebAccess::WebAccess(vector<string> approved_urls, long delay, long conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
+  construct();
+}
+
+WebAccess::WebAccess(long delay) : delay(delay) {
+  conn_per_thread = 10;
+  construct();
+}
+
+WebAccess::WebAccess(long delay, long conn_per_thread) : delay(delay), conn_per_thread(conn_per_thread) {
   construct();
 }
 
@@ -76,7 +89,7 @@ size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
 
 CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
 #ifdef DEBUG
-  cout << "Adding url: " << url << endl;
+  cerr << "Adding url: " << url << endl;
 #endif
   CURL *eh = curl_easy_init();
   curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
@@ -89,7 +102,20 @@ CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
   return eh;
 }
 
+void WebAccess::checkurl(string url) {
+  regex first(".*//");
+  regex last("/.*");
+  url = regex_replace(url, first, "");
+  url = regex_replace(url, last, "");
+  if ( std::find(approved_urls.begin(), approved_urls.end(), url) == approved_urls.end() ) {
+    fprintf(stderr, "Attempted to use unapproved url: %s\n", url.c_str());
+    exit(EXIT_FAILURE);
+  }
+}
+
 char * WebAccess::api_call(string url) {
+  checkurl(url);
+
   struct memory chunk = {0};
   CURL *eh = add_transfer(url, &chunk, 0);
 
@@ -99,7 +125,7 @@ char * WebAccess::api_call(string url) {
     exit(res);
   }
 #ifdef DEBUG
-  cout << "cURL response: " << chunk.response << endl;
+  cerr << "cURL response: " << chunk.response << endl;
 #endif
 
   curl_easy_cleanup(eh);
@@ -108,8 +134,8 @@ char * WebAccess::api_call(string url) {
 
 vector<string> WebAccess::api_call(vector<string> urls) {
 #ifdef DEBUG
-  cout << "All urls: " << endl;
-  for (int i = 0; i < urls.size(); i++) cout << urls[i] << endl;
+  cerr << "All urls: " << endl;
+  for (int i = 0; i < urls.size(); i++) cerr << urls[i] << endl;
 #endif
   CURLM *cm;
   CURLMsg *msg;
@@ -123,34 +149,39 @@ vector<string> WebAccess::api_call(vector<string> urls) {
   curl_multi_setopt(cm, CURLMOPT_MAXCONNECTS, conn_per_thread);
 
   for (transfers = 0; transfers < conn_per_thread; transfers++) {
+    checkurl(urls[transfers]);
     chunks[transfers] = {0};
     curl_multi_add_handle(cm, add_transfer(urls[transfers], &chunks[transfers], transfers));
   }
 #ifdef DEBUG
-  cout << "Handles added" << endl;
+  cerr << "Handles added" << endl;
 #endif
 
   do {
-    curl_multi_perform(cm, &still_alive);
+    duration<long, ratio<1,1000>> time_span = duration_cast<duration<long, ratio<1,1000>>>(steady_clock::now() - prev_time);
+    if (time_span > delay) {
+      curl_multi_perform(cm, &still_alive);
+      prev_time = steady_clock::now();
+    }
 #ifdef DEBUG
-    cout << "Still alive: " << to_string(still_alive) << endl;
+    cerr << "Still alive: " << to_string(still_alive) << endl;
 #endif
 
     while ((msg = curl_multi_info_read(cm, &msgs_left))) {
 #ifdef DEBUG
-      cout << "Msg ready" << endl;
+      cerr << "Msg ready" << endl;
 #endif
       if (msg->msg == CURLMSG_DONE) {
 	int num;
 	CURL *e = msg->easy_handle;
 	curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &num);
 #ifdef DEBUG
-	cout << "Transfer num: " << to_string(num) << endl;
+	cerr << "Transfer num: " << to_string(num) << endl;
 #endif
 	output[num].reserve(strlen(chunks[num].response));
 	output[num].assign(chunks[num].response);
 #ifdef DEBUG
-	cout << "First 250 chars of response: " << output[num].substr(0, 250) << endl;
+	cerr << "First 250 chars of response: " << output[num].substr(0, 250) << endl;
 #endif
 	curl_multi_remove_handle(cm, e);
 	curl_easy_cleanup(e);
@@ -159,12 +190,13 @@ vector<string> WebAccess::api_call(vector<string> urls) {
         fprintf(stderr, "E: CURLMsg (%d)\n", msg->msg);
       }
       if (transfers < urls.size()) {
+        checkurl(urls[transfers]);
 	chunks[transfers] = {0};
         curl_multi_add_handle(cm, add_transfer(urls[transfers++], &chunks[transfers], transfers));
       }
     }
 #ifdef DEBUG
-    cout << "Transfers: " << to_string(transfers) << endl;
+    cerr << "Transfers: " << to_string(transfers) << endl;
 #endif
     if (still_alive)
       curl_multi_wait(cm, NULL, 0, 1000, NULL);

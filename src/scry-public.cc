@@ -49,7 +49,9 @@ Scry::Scry() {
   signal(SIGSEGV, print_stacktrace);
   signal(SIGABRT, print_stacktrace);
 #endif
-  wa = new WebAccess();
+  vector<string> temp;
+  temp.push_back("api.scryfall.com");
+  wa = new WebAccess(temp, 50);
   da = new DataAccess();
   da->db_init("Cards");
   da->db_init("Lists");
@@ -73,16 +75,16 @@ List * Scry::cards_search(string query) {
   query = urlformat(query);
   string url = "https://api.scryfall.com/cards/search?q=" + query;
 #ifdef DEBUG
-  cout << "URL: " << url << endl;
+  cerr << "URL: " << url << endl;
 #endif
   List * list = new List(wa->api_call(url));
 #ifdef DEBUG
-  cout << "First card: " << list->cards()[0]->name() << endl;
+  cerr << "First card: " << list->cards()[0]->name() << endl;
 #endif
   lists.push_back(list);
   List * full_list = allcards(list);
 #ifdef DEBUG
-  cout << "Full first card: " << full_list->cards()[0]->name() << endl;
+  cerr << "Full first card: " << full_list->cards()[0]->name() << endl;
 #endif
   return full_list;
 }

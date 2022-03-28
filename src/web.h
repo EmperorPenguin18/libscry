@@ -6,6 +6,10 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <chrono>
+#include <ratio>
+#include <algorithm>
+#include <regex>
 #include <dlfcn.h>
 #include <curl/curl.h>
 
@@ -14,13 +18,16 @@
 #endif
 
 using namespace std;
+using namespace std::chrono;
 
 class WebAccess {
   public:
     WebAccess();
     WebAccess(vector<string>);
-    WebAccess(long);
     WebAccess(vector<string>, long);
+    WebAccess(vector<string>, long, long);
+    WebAccess(long);
+    WebAccess(long, long);
     ~WebAccess();
     
     virtual char * api_call(string url);
@@ -61,12 +68,17 @@ class WebAccess {
     typedef CURLMcode (*cmc_handle)(CURLM *);
     cmc_handle curl_multi_cleanup;
 
+    static size_t cb(void *data, size_t size, size_t nmemb, void *userp);
+
     vector<string> approved_urls;
+    void checkurl(string);
+
+    duration<long, ratio<1,1000>> delay;
+    steady_clock::time_point prev_time;
     long conn_per_thread;
     struct memory {
       char *response;
       size_t size;
     };
-    static size_t cb(void *data, size_t size, size_t nmemb, void *userp);
     CURL * add_transfer(string, struct memory *, int);
 };

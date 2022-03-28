@@ -32,8 +32,12 @@ string Scry::implode(const vector<string>& strs, const char& ch) {
 string Scry::urlformat(string str) {
   regex space(" ");
   regex colon(":");
+  regex lt("<");
+  regex gt(">");
   str = regex_replace(str, space, "%20");
   str = regex_replace(str, colon, "%3A");
+  str = regex_replace(str, lt, "%3C");
+  str = regex_replace(str, gt, "%3E");
   return str;
 }
 
@@ -62,9 +66,13 @@ List * Scry::allcards(List * list) {
   List * newlist;
   if (list->nextPage() != "") {
     Document doc; doc.Parse(list->json().c_str());
-    unsigned int pages = static_cast<int>(ceil(doc["total_cards"].GetInt()/170));
+    unsigned int pages = static_cast<int>(
+      ceil(
+	doc["total_cards"].GetInt() / (list->cards().size()-2)
+      )
+    );
 #ifdef DEBUG
-    cout << "# of pages: " << to_string(pages) << endl;
+    cerr << "# of pages: " << to_string(pages) << endl;
 #endif
     vector<string> urls;
     for (int i = 2; i <= pages; i++) urls.push_back(list->nextPage() + to_string(i));
