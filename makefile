@@ -1,8 +1,8 @@
 build: src/*.cc
-	g++ -g -Og -D DEBUG -rdynamic -std=c++20 -fPIC -shared src/*.cc -o libscry.so
+	g++ -g -Og -D DEBUG -rdynamic -std=c++20 -pthread -fPIC -shared src/*.cc -o libscry.so
 
 release: src/*.cc
-	g++ -std=c++20 -fPIC -shared src/*.cc -o libscry.so
+	g++ -std=c++20 -pthread -fPIC -shared src/*.cc -o libscry.so
 
 install: src/*.h libscry.so
 	mkdir -p /usr/include/scry

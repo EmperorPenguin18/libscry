@@ -51,7 +51,7 @@ Scry::Scry() {
 #endif
   vector<string> temp;
   temp.push_back("api.scryfall.com");
-  wa = new WebAccess(temp, 50);
+  wa = new WebAccess(temp, 50, 20);
   da = new DataAccess();
   da->db_init("Cards");
   da->db_init("Lists");

@@ -46,7 +46,7 @@ void List::construct(const char * rawjson) {
 #ifdef DEBUG
     cerr << "Regex 1: " << sm1[0] << endl << "Regex 2: " << sm2[0] << endl << "Regex 3: " << sm3[0] << endl;
 #endif
-    nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, sm3[0].length()-3);
+    nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, 5);
   } else nextpage = "";
 }
 

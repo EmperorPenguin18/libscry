@@ -10,6 +10,11 @@
 #include <ratio>
 #include <algorithm>
 #include <regex>
+#include <future>
+#include <mutex>
+#include <cmath>
+#include <functional>
+#include <csignal>
 #include <dlfcn.h>
 #include <curl/curl.h>
 
@@ -25,9 +30,9 @@ class WebAccess {
     WebAccess();
     WebAccess(vector<string>);
     WebAccess(vector<string>, long);
-    WebAccess(vector<string>, long, long);
+    WebAccess(vector<string>, long, size_t);
     WebAccess(long);
-    WebAccess(long, long);
+    WebAccess(long, size_t);
     ~WebAccess();
     
     virtual char * api_call(string url);
@@ -75,10 +80,12 @@ class WebAccess {
 
     duration<long, ratio<1,1000>> delay;
     steady_clock::time_point prev_time;
-    long conn_per_thread;
+    size_t conn_per_thread;
     struct memory {
       char *response;
       size_t size;
     };
     CURL * add_transfer(string, struct memory *, int);
+    mutex mtx;
+    vector<string> start_multi(vector<string>);
 };

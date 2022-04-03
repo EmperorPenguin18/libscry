@@ -68,19 +68,27 @@ List * Scry::allcards(List * list) {
     Document doc; doc.Parse(list->json().c_str());
     unsigned int pages = static_cast<int>(
       ceil(
-	doc["total_cards"].GetInt() / (list->cards().size()-2)
+	doc["total_cards"].GetInt() / (list->cards().size())
       )
     );
 #ifdef DEBUG
     cerr << "# of pages: " << to_string(pages) << endl;
 #endif
     vector<string> urls;
-    for (int i = 2; i <= pages; i++) urls.push_back(list->nextPage() + to_string(i));
+    int i;
+    for (i = 2; i <= pages; i++) urls.push_back(list->nextPage() + to_string(i));
     vector<string> one; one.push_back(list->json());
     vector<string> two = wa->api_call(urls);
     two.insert(two.begin(), one.begin(), one.end());
     newlist = new List(two);
     lists.push_back(newlist);
+    while (newlist->nextPage() != "") {
+      string extrapage = wa->api_call(newlist->nextPage() + to_string(i));
+      two.push_back(extrapage);
+      newlist = new List(two);
+      lists.push_back(newlist);
+      i++;
+    }
   } else newlist = list;
   return newlist;
 }

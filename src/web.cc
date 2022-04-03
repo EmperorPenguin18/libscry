@@ -24,7 +24,7 @@ WebAccess::WebAccess(vector<string> approved_urls, long delay) : approved_urls(a
   construct();
 }
 
-WebAccess::WebAccess(vector<string> approved_urls, long delay, long conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
+WebAccess::WebAccess(vector<string> approved_urls, long delay, size_t conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
   construct();
 }
 
@@ -33,7 +33,7 @@ WebAccess::WebAccess(long delay) : delay(delay) {
   construct();
 }
 
-WebAccess::WebAccess(long delay, long conn_per_thread) : delay(delay), conn_per_thread(conn_per_thread) {
+WebAccess::WebAccess(long delay, size_t conn_per_thread) : delay(delay), conn_per_thread(conn_per_thread) {
   construct();
 }
 
@@ -132,56 +132,66 @@ char * WebAccess::api_call(string url) {
   return chunk.response;
 }
 
-vector<string> WebAccess::api_call(vector<string> urls) {
+vector<string> WebAccess::start_multi(vector<string> urls) {
 #ifdef DEBUG
+  mtx.lock();
   cerr << "All urls: " << endl;
   for (int i = 0; i < urls.size(); i++) cerr << urls[i] << endl;
+  mtx.unlock();
 #endif
   CURLM *cm;
   CURLMsg *msg;
   unsigned int transfers = 0;
   int msgs_left = -1;
   int still_alive = 1;
-  vector<string> output(urls.size());
-  struct memory chunks[urls.size()];
+  unsigned int conns = min(urls.size(), conn_per_thread);
+  vector<string> output(conns);
+  struct memory chunks[conns];
 
   cm = curl_multi_init();
   curl_multi_setopt(cm, CURLMOPT_MAXCONNECTS, conn_per_thread);
 
-  for (transfers = 0; transfers < conn_per_thread; transfers++) {
+  for (transfers = 0; transfers < conns; transfers++) {
     checkurl(urls[transfers]);
     chunks[transfers] = {0};
     curl_multi_add_handle(cm, add_transfer(urls[transfers], &chunks[transfers], transfers));
   }
 #ifdef DEBUG
+  mtx.lock();
   cerr << "Handles added" << endl;
+  mtx.unlock();
 #endif
 
   do {
     duration<long, ratio<1,1000>> time_span = duration_cast<duration<long, ratio<1,1000>>>(steady_clock::now() - prev_time);
     if (time_span > delay) {
       curl_multi_perform(cm, &still_alive);
+      mtx.lock();
       prev_time = steady_clock::now();
+      mtx.unlock();
     }
-#ifdef DEBUG
-    cerr << "Still alive: " << to_string(still_alive) << endl;
-#endif
 
     while ((msg = curl_multi_info_read(cm, &msgs_left))) {
 #ifdef DEBUG
+      mtx.lock();
       cerr << "Msg ready" << endl;
+      mtx.unlock();
 #endif
       if (msg->msg == CURLMSG_DONE) {
 	int num;
 	CURL *e = msg->easy_handle;
 	curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &num);
 #ifdef DEBUG
+        mtx.lock();
 	cerr << "Transfer num: " << to_string(num) << endl;
+        mtx.unlock();
 #endif
 	output[num].reserve(strlen(chunks[num].response));
 	output[num].assign(chunks[num].response);
 #ifdef DEBUG
+        mtx.lock();
 	cerr << "First 250 chars of response: " << output[num].substr(0, 250) << endl;
+        mtx.unlock();
 #endif
 	curl_multi_remove_handle(cm, e);
 	curl_easy_cleanup(e);
@@ -189,15 +199,7 @@ vector<string> WebAccess::api_call(vector<string> urls) {
       else {
         fprintf(stderr, "E: CURLMsg (%d)\n", msg->msg);
       }
-      if (transfers < urls.size()) {
-        checkurl(urls[transfers]);
-	chunks[transfers] = {0};
-        curl_multi_add_handle(cm, add_transfer(urls[transfers++], &chunks[transfers], transfers));
-      }
     }
-#ifdef DEBUG
-    cerr << "Transfers: " << to_string(transfers) << endl;
-#endif
     if (still_alive)
       curl_multi_wait(cm, NULL, 0, 1000, NULL);
 
@@ -205,4 +207,44 @@ vector<string> WebAccess::api_call(vector<string> urls) {
 
   curl_multi_cleanup(cm);
   return output;
+}
+
+vector<string> WebAccess::api_call(vector<string> urls) {
+  unsigned available_threads = thread::hardware_concurrency()-1; //Not actual max, but keeps things reasonable
+  unsigned used_threads = static_cast<unsigned>(ceil(
+    static_cast<float>(urls.size()) / static_cast<float>(conn_per_thread)
+  ));
+#ifdef DEBUG
+  cerr << "Available threads: " << to_string(available_threads) << endl
+    << "Used threads: " << to_string(used_threads) << endl;
+#endif
+  if ( (available_threads > 0) && (available_threads >= used_threads) ) {
+    vector<string> output;
+    vector<future<vector<string>>> threads(used_threads);
+    for (int i = 0; i < used_threads; i++) {
+      vector<string> data( min(conn_per_thread, urls.size()-i*conn_per_thread) );
+      for (int j = 0; j < data.size(); j++) data.at(j) = urls.at(i*conn_per_thread+j);
+#ifdef DEBUG
+      mtx.lock();
+      cerr << "Thread " << to_string(i) << " is getting: " << endl;
+      for (int j = 0; j < data.size(); j++) cerr << data.at(j) << endl;
+      mtx.unlock();
+#endif
+      threads.at(i) = async(&WebAccess::start_multi, this, data);
+    }
+    for (int i = 0; i < used_threads; i++) {
+      vector<string> newdata = threads[i].get();
+      for (int j = 0; j < newdata.size(); j++) {
+#ifdef DEBUG
+	mtx.lock();
+	cerr << "Adding to output: " << newdata[j].substr(0, 10) << endl;
+	mtx.unlock();
+#endif
+	output.push_back(newdata[j]);
+      }
+    }
+    return output;
+  }
+  start_multi(urls);
+  return urls;
 }
