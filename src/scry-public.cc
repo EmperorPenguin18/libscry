@@ -52,7 +52,7 @@ Scry::Scry() {
   vector<string> temp;
   temp.push_back("api.scryfall.com");
   wa = new WebAccess(temp, 50, 20);
-  da = new DataAccess();
+  da = new DataAccess("libscry");
   da->db_init("Cards");
   da->db_init("Lists");
   da->db_init("Autocompletes");

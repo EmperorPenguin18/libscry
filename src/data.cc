@@ -7,7 +7,7 @@
 using namespace std;
 using namespace std::chrono;
 
-DataAccess::DataAccess() {
+DataAccess::DataAccess(const char *name) {
   sqlite3_lib = dlopen("libsqlite3.so", RTLD_LAZY | RTLD_DEEPBIND);
   if (!sqlite3_lib) {
     fprintf(stderr, "%s\n", dlerror());
@@ -21,10 +21,22 @@ DataAccess::DataAccess() {
   sqlite3_finalize = reinterpret_cast<f_handle>(dlsym(sqlite3_lib, "sqlite3_finalize"));
   sqlite3_column_text = reinterpret_cast<t_handle>(dlsym(sqlite3_lib, "sqlite3_column_text"));
 
-  char * cachedir = getenv("XDG_CACHE_HOME");
+  char * cachedir = getenv("XDG_DATA_HOME");
+  char fname[100] = "";
   int rc;
-  if (cachedir != NULL) rc = sqlite3_open(strcat(cachedir, "/libscry.db"), &db);
-  else rc = sqlite3_open(strcat(getenv("HOME"), "/.cache/libscry.db"), &db);
+  if (cachedir != NULL) {
+    strcat(fname, cachedir);
+    strcat(fname, "/");
+  } else {
+    strcat(fname, getenv("HOME"));
+    strcat(fname, "/.local/share/");
+  }
+  strcat(fname, name);
+  strcat(fname, ".db");
+#ifdef DEBUG
+  fprintf(stderr, "Database filepath: %s\n", fname);
+#endif
+  rc = sqlite3_open(fname, &db);
   if (rc) {
     fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);

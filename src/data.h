@@ -14,7 +14,7 @@ using namespace std;
 ///This class is used to access the database
 class DataAccess {
   public:
-    DataAccess();
+    DataAccess(const char *);
     ~DataAccess();
 
     virtual void db_init(string table);
