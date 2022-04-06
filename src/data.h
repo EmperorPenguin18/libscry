@@ -9,6 +9,10 @@
 #include <dlfcn.h>
 #include <sqlite3.h>
 
+#ifdef DEBUG
+#include <iostream>
+#endif
+
 using namespace std;
 
 ///This class is used to access the database
@@ -17,12 +21,10 @@ class DataAccess {
     DataAccess(const char *);
     ~DataAccess();
 
-    virtual void db_init(string table);
-    virtual bool db_check(string table, string search);
-    virtual string db_read(string table, string search);
-    virtual void db_write(string table, string key, string value);
-    virtual void db_new(string table, string key, string value);
-    virtual int datecheck(string table, string search);
+    virtual void db_exec(string);
+    virtual string db_exec(string, string);
+    virtual void db_exec(string, string, string);
+    virtual int datecheck(string, string);
   private:
     void * sqlite3_lib;
     typedef int (*o_handle)(const char *, sqlite3 **);
@@ -41,6 +43,6 @@ class DataAccess {
     t_handle sqlite3_column_text;
 
     sqlite3 *db;
-    virtual string db_exec(string in);
+    virtual string sql_call(string in);
 };
 

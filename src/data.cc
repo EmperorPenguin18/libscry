@@ -49,8 +49,11 @@ DataAccess::~DataAccess() {
   dlclose(sqlite3_lib);
 }
 
-string DataAccess::db_exec(string in) {
+string DataAccess::sql_call(string in) {
   const char * cmd = in.c_str();
+#ifdef DEBUG
+  cerr << "Sql call: " << cmd << endl;
+#endif
   sqlite3_stmt *stmt;
   int rc = sqlite3_prepare_v2(db, cmd, -1, &stmt, NULL);
   if (rc != SQLITE_OK) {
@@ -63,16 +66,21 @@ string DataAccess::db_exec(string in) {
     sqlite3_finalize(stmt);
     exit(1);
   }
-  string output;
+  string output = "";
   string temp = in.substr(0, 6);
-  if (temp == "SELECT") output = string((char*)sqlite3_column_text(stmt, 0));
+  char *rawoutput = (char*)sqlite3_column_text(stmt, 0);
+  if ( (temp == "SELECT") && (rawoutput != NULL) ) output = string(rawoutput);
   sqlite3_finalize(stmt);
+#ifdef DEBUG
+  cerr << "Database returned: " << output << endl;
+#endif
   return output;
 }
 
 int DataAccess::datecheck(string table, string search) {
   string cmd = "SELECT Updated FROM " + table + " WHERE Key='" + search + "';";
-  string datetime = db_exec(cmd);
+  string datetime = sql_call(cmd);
+  if (datetime.compare("") == 0) return 1;
 
   const time_point<system_clock> now{system_clock::now()};
   const year_month_day ymd{floor<days>(now)};
@@ -101,28 +109,23 @@ int DataAccess::datecheck(string table, string search) {
   return output;
 }
 
-void DataAccess::db_init(string table) {
-  db_exec("CREATE TABLE IF NOT EXISTS " + table + "(Key TEXT, Updated DATETIME, Value TEXT);");
+void DataAccess::db_exec(string table) {
+#ifdef DEBUG
+  cerr << "Creating table: " << table << endl;
+#endif
+  sql_call("CREATE TABLE IF NOT EXISTS " + table + "(Key TEXT NOT NULL, Updated DATETIME NOT NULL, Value TEXT NOT NULL, PRIMARY KEY(Key));");
 }
 
-bool DataAccess::db_check(string table, string search) {
-  string cmd = "SELECT COUNT(1) FROM " + table + " WHERE Key='" + search + "';";
-  if (db_exec(cmd).compare("1") == 0) return true;
-  return false;
+string DataAccess::db_exec(string table, string key) {
+  string cmd = "SELECT Value FROM " + table + " WHERE Key='" + key + "';";
+  return sql_call(cmd);
 }
 
-string DataAccess::db_read(string table, string search) {
-  string cmd = "SELECT Value FROM " + table + " WHERE Key='" + search + "';";
-  return db_exec(cmd);
+void DataAccess::db_exec(string table, string key, string value) {
+  string cmd = "SELECT COUNT(1) FROM " + table + " WHERE Key='" + key + "';";
+  if (sql_call(cmd).compare("1") == 0)
+    cmd = "UPDATE " + table + " SET Updated=datetime(), Value='" + value + "' WHERE Key='" + key + "';";
+  else
+    cmd = "INSERT INTO " + table + " VALUES ('" + key + "', datetime(), '" + value + "');";
+  sql_call(cmd);
 }
-
-void DataAccess::db_write(string table, string key, string value) {
-  string cmd = "UPDATE " + table + " SET Updated=datetime(), Value='" + value + "' WHERE Key='" + key + "';";
-  db_exec(cmd);
-}
-
-void DataAccess::db_new(string table, string key, string value) {
-  string cmd = "INSERT INTO " + table + " VALUES ('" + key + "', datetime(), '" + value + "');";
-  db_exec(cmd);
-}
-

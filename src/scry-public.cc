@@ -53,9 +53,9 @@ Scry::Scry() {
   temp.push_back("api.scryfall.com");
   wa = new WebAccess(temp, 50, 20);
   da = new DataAccess("libscry");
-  da->db_init("Cards");
-  da->db_init("Lists");
-  da->db_init("Autocompletes");
+  da->db_exec("Cards");
+  da->db_exec("Lists");
+  da->db_exec("Autocompletes");
 }
 
 Scry::~Scry() {
@@ -93,21 +93,16 @@ List * Scry::cards_search_cache(string query) {
   query = urlformat(query);
   List * list;
 
-  if (da->db_check("Lists", query)) {
-    if (da->datecheck("Lists", query) == 1) {
-      list = cards_search(query);
-      da->db_write("Lists", query, cachecard(list));
-    } else {
-      vector<string> strvec = explode(da->db_read("Lists", query), '\n');
-      vector<Card *> content;
-      for (int i = 0; i < strvec.size(); i++)
-	content.push_back( new Card( da->db_read("Cards", nameformat(strvec[i])).c_str() ) );
-      list = new List( content );
-      lists.push_back(list);
-    }
-  } else {
+  if (da->datecheck("Lists", query) == 1) {
     list = cards_search(query);
-    da->db_new("Lists", query, cachecard(list));
+    da->db_exec("Lists", query, cachecard(list));
+  } else {
+    vector<string> strvec = explode(da->db_exec("Lists", query), '\n');
+    vector<Card *> content;
+    for (int i = 0; i < strvec.size(); i++)
+      content.push_back( new Card( da->db_exec("Cards", nameformat(strvec[i])).c_str() ) );
+    list = new List( content );
+    lists.push_back(list);
   }
 
   return list;
@@ -127,17 +122,12 @@ Card * Scry::cards_named_cache(string query) {
   query[0] = toupper(query[0]);
   string name = nameformat(query);
 
-  if (da->db_check("Cards", name)) {
-    if (da->datecheck("Cards", name) == 1) {
-      card = cards_named(query);
-      da->db_write("Cards", name, nameformat(card->json()));
-    } else {
-      card = new Card( da->db_read("Cards", name).c_str() );
-      cards.push_back(card);
-    }
-  } else {
+  if (da->datecheck("Cards", name) == 1) {
     card = cards_named(query);
-    da->db_new("Cards", name, nameformat(card->json()));
+    da->db_exec("Cards", name, nameformat(card->json()));
+  } else {
+    card = new Card( da->db_exec("Cards", name).c_str() );
+    cards.push_back(card);
   }
 
   return card;
@@ -158,18 +148,12 @@ vector<string> Scry::cards_autocomplete_cache(string query) {
   query = urlformat(query);
   vector<string> names;
 
-  if (da->db_check("Autocompletes", query)) {
-    if (da->datecheck("Autocompletes", query) == 1) {
-      names = cards_autocomplete(query);
-      string namestr = implode(names, '\n');
-      da->db_write("Autocompletes", query, nameformat(namestr));
-    } else {
-      names = explode(da->db_read("Autocompletes", query), '\n');
-    }
-  } else {
+  if (da->datecheck("Autocompletes", query) == 1) {
     names = cards_autocomplete(query);
     string namestr = implode(names, '\n');
-    da->db_new("Autocompletes", query, nameformat(namestr));
+    da->db_exec("Autocompletes", query, nameformat(namestr));
+  } else {
+    names = explode(da->db_exec("Autocompletes", query), '\n');
   }
 
   return names;

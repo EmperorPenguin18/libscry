@@ -54,9 +54,7 @@ string Scry::cachecard(List * list) {
     string name = nameformat(cards[i]->name());
     names += name + "\n";
     string temp = nameformat(cards[i]->json());
-    if (da->db_check("Cards", name)) {
-      da->db_write("Cards", name, temp);
-    } else da->db_new("Cards", name, temp);
+    da->db_exec("Cards", name, temp);
   }
   names.pop_back();
   return names;
