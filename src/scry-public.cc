@@ -97,11 +97,13 @@ List * Scry::cards_search_cache(string query) {
     list = cards_search(query);
     da->db_exec("Lists", query, cachecard(list));
   } else {
-    vector<string> strvec = explode(da->db_exec("Lists", query), '\n');
-    vector<Card *> content;
-    for (int i = 0; i < strvec.size(); i++)
-      content.push_back( new Card( da->db_exec("Cards", nameformat(strvec[i])).c_str() ) );
-    list = new List( content );
+    vector<string> names = explode(da->db_exec("Lists", query), '\n');
+    string data = "{\"data\":[";
+    for (int i = 0; i < names.size(); i++)
+      data += da->db_exec("Cards", nameformat(names[i])) + ',';
+    data.pop_back();
+    data += "],\"has_more\":false}";
+    list = new List(data.c_str());
     lists.push_back(list);
   }
 

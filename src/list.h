@@ -19,7 +19,6 @@ class List {
   public:
     List(const char * rawjson);
     List(vector<string> rawjsons);
-    List(vector<Card *> input);
     ~List();
   
     ///Returns a vector with all the cards on this page of the list. For cards on all pages see allcards().

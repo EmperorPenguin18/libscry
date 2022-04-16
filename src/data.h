@@ -6,6 +6,8 @@
 #include <string>
 #include <cstring>
 #include <chrono>
+#include <vector>
+#include <thread>
 #include <dlfcn.h>
 #include <sqlite3.h>
 
@@ -21,10 +23,11 @@ class DataAccess {
     DataAccess(const char *);
     ~DataAccess();
 
+    virtual int datecheck(string, string);
     virtual void db_exec(string);
     virtual string db_exec(string, string);
     virtual void db_exec(string, string, string);
-    virtual int datecheck(string, string);
+    virtual void db_exec(string, vector<string>, vector<string>);
   private:
     void * sqlite3_lib;
     typedef int (*o_handle)(const char *, sqlite3 **);
@@ -41,8 +44,21 @@ class DataAccess {
     f_handle sqlite3_finalize;
     typedef const unsigned char* (*t_handle)(sqlite3_stmt *, int);
     t_handle sqlite3_column_text;
+    typedef int (*x_handle)(sqlite3 *, const char *, int(*)(void *, int, char **, char **), void *, char **);
+    x_handle sqlite3_exec;
+    typedef sqlite3_backup* (*i_handle)(sqlite3 *, const char *, sqlite3 *, const char *);
+    i_handle sqlite3_backup_init;
+    typedef int (*b_handle)(sqlite3_backup *, int);
+    b_handle sqlite3_backup_step;
+    typedef int (*n_handle)(sqlite3_backup *);
+    n_handle sqlite3_backup_finish;
+    typedef int (*r_handle)(sqlite3 *);
+    r_handle sqlite3_errcode;
 
     sqlite3 *db;
-    virtual string sql_call(string in);
+    char *fname;
+    virtual void db_copy(int);
+    virtual string sql_read(sqlite3 *, string);
+    virtual void sql_write(sqlite3 *, string);
 };
 

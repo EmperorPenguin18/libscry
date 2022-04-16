@@ -48,16 +48,19 @@ string Scry::nameformat(string str) {
 }
 
 string Scry::cachecard(List * list) {
-  string names = "";
+  string output = "";
   vector <Card *> cards = list->cards();
+  vector<string> names;
+  vector<string> data;
   for (int i = 0; i < cards.size(); i++) {
     string name = nameformat(cards[i]->name());
-    names += name + "\n";
-    string temp = nameformat(cards[i]->json());
-    da->db_exec("Cards", name, temp);
+    output += name + "\n";
+    names.push_back(name);
+    data.push_back( nameformat(cards[i]->json()) );
   }
-  names.pop_back();
-  return names;
+  da->db_exec("Cards", names, data);
+  output.pop_back();
+  return output;
 }
 
 List * Scry::allcards(List * list) {

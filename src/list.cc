@@ -50,11 +50,6 @@ void List::construct(const char * rawjson) {
   } else nextpage = "";
 }
 
-List::List(vector<Card *> input) {
-  content = input;
-  nextpage = nullptr;
-}
-
 List::~List() {
   while (!content.empty()) {
     delete content.back();
