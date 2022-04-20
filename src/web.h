@@ -35,7 +35,11 @@ class WebAccess {
     WebAccess(long, size_t);
     ~WebAccess();
     
-    virtual char * api_call(string url);
+    struct memory {
+      byte *response;
+      size_t size;
+    };
+    virtual struct memory api_call(string url);
     virtual vector<string> api_call(vector<string>);
   private:
     void construct();
@@ -81,10 +85,6 @@ class WebAccess {
     duration<long, ratio<1,1000>> delay;
     steady_clock::time_point prev_time;
     size_t conn_per_thread;
-    struct memory {
-      char *response;
-      size_t size;
-    };
     CURL * add_transfer(string, struct memory *, int);
     mutex mtx;
     vector<string> start_multi(vector<string>);

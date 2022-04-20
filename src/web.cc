@@ -71,19 +71,16 @@ WebAccess::~WebAccess() {
 size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
-
-  char *ptr = (char *)realloc(mem->response, mem->size + realsize + 1);
+  byte *ptr = (byte *)realloc(mem->response, mem->size + realsize + 1);
   if (!ptr) {
     /* out of memory */
     fprintf(stderr, "not enough memory (realloc returned NULL)\n");
     return 0;
   }
-
   mem->response = ptr;
   memcpy(&(mem->response[mem->size]), data, realsize);
   mem->size += realsize;
-  mem->response[mem->size] = 0;
-
+  mem->response[mem->size] = (byte)0;
   return realsize;
 }
 
@@ -113,7 +110,7 @@ void WebAccess::checkurl(string url) {
   }
 }
 
-char * WebAccess::api_call(string url) {
+struct WebAccess::memory WebAccess::api_call(string url) {
   checkurl(url);
 
   struct memory chunk = {0};
@@ -125,11 +122,13 @@ char * WebAccess::api_call(string url) {
     exit(res);
   }
 #ifdef DEBUG
-  cerr << "cURL response: " << chunk.response << endl;
+  cerr << "First 250 chars of response: ";
+  for (size_t i = 0; i < min((size_t)250, chunk.size); i++) cerr << (char)chunk.response[i];
+  cerr << endl;
 #endif
 
   curl_easy_cleanup(eh);
-  return chunk.response;
+  return chunk;
 }
 
 vector<string> WebAccess::start_multi(vector<string> urls) {
@@ -186,8 +185,8 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
 	cerr << "Transfer num: " << to_string(num) << endl;
         mtx.unlock();
 #endif
-	output[num].reserve(strlen(chunks[num].response));
-	output[num].assign(chunks[num].response);
+	output[num].reserve(strlen((char*)chunks[num].response));
+	output[num].assign((char*)chunks[num].response);
 #ifdef DEBUG
         mtx.lock();
 	cerr << "First 250 chars of response: " << output[num].substr(0, 250) << endl;

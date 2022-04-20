@@ -23,11 +23,11 @@ class DataAccess {
     DataAccess(const char *);
     ~DataAccess();
 
-    virtual int datecheck(string, string);
-    virtual void db_exec(string);
-    virtual string db_exec(string, string);
-    virtual void db_exec(string, string, string);
-    virtual void db_exec(string, vector<string>, vector<string>);
+    virtual int datecheck(const char*, const char*);
+    virtual void db_exec(const char*);
+    virtual byte* db_exec(const char*, const char*, size_t*);
+    virtual void db_exec(const char*, const char*, byte*, const size_t&);
+    virtual void db_exec(const char*, vector<string>, vector<string>);
   private:
     void * sqlite3_lib;
     typedef int (*o_handle)(const char *, sqlite3 **);
@@ -42,8 +42,10 @@ class DataAccess {
     s_handle sqlite3_step;
     typedef int (*f_handle)(sqlite3_stmt *);
     f_handle sqlite3_finalize;
-    typedef const unsigned char* (*t_handle)(sqlite3_stmt *, int);
-    t_handle sqlite3_column_text;
+    typedef const void* (*t_handle)(sqlite3_stmt *, int);
+    t_handle sqlite3_column_blob;
+    typedef int (*y_handle)(sqlite3_stmt *, int);
+    y_handle sqlite3_column_bytes;
     typedef int (*x_handle)(sqlite3 *, const char *, int(*)(void *, int, char **, char **), void *, char **);
     x_handle sqlite3_exec;
     typedef sqlite3_backup* (*i_handle)(sqlite3 *, const char *, sqlite3 *, const char *);
@@ -54,11 +56,14 @@ class DataAccess {
     n_handle sqlite3_backup_finish;
     typedef int (*r_handle)(sqlite3 *);
     r_handle sqlite3_errcode;
+    typedef int (*d_handle)(sqlite3_stmt *, int, const void*, int, void(*)(void*));
+    d_handle sqlite3_bind_blob;
 
     sqlite3 *db;
     char *fname;
+    vector<byte*> bytes;
     virtual void db_copy(int);
-    virtual string sql_read(sqlite3 *, string);
-    virtual void sql_write(sqlite3 *, string);
+    virtual byte* sql_read(sqlite3 *, const char*, size_t*);
+    virtual void sql_write(sqlite3 *, const char*, byte*, const size_t&);
 };
 

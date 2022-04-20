@@ -33,6 +33,10 @@ class Scry {
     virtual Card * cards_named(string query);
     ///Cached version of cards_named.
     virtual Card * cards_named_cache(string query);
+    ///Put in the name of a card and get its image
+    virtual byte * cards_named(string, size_t *);
+    ///Cached version of cards_named (image)
+    virtual byte * cards_named_cache(string, size_t *);
     ///Put in part of a card's name as the argument.
     virtual vector<string> cards_autocomplete(string query);
     ///Cached version of cards_autocomplete.

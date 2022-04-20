@@ -84,7 +84,7 @@ List * Scry::allcards(List * list) {
     newlist = new List(two);
     lists.push_back(newlist);
     while (newlist->nextPage() != "") {
-      string extrapage = wa->api_call(newlist->nextPage() + to_string(i));
+      string extrapage = (char*)wa->api_call(newlist->nextPage() + to_string(i)).response;
       two.push_back(extrapage);
       newlist = new List(two);
       lists.push_back(newlist);

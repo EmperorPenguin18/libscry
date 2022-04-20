@@ -56,6 +56,7 @@ Scry::Scry() {
   da->db_exec("Cards");
   da->db_exec("Lists");
   da->db_exec("Autocompletes");
+  da->db_exec("Images");
 }
 
 Scry::~Scry() {
@@ -77,7 +78,7 @@ List * Scry::cards_search(string query) {
 #ifdef DEBUG
   cerr << "URL: " << url << endl;
 #endif
-  List * list = new List(wa->api_call(url));
+  List * list = new List((char*)wa->api_call(url).response);
 #ifdef DEBUG
   cerr << "First card: " << list->cards()[0]->name() << endl;
 #endif
@@ -93,14 +94,16 @@ List * Scry::cards_search_cache(string query) {
   query = urlformat(query);
   List * list;
 
-  if (da->datecheck("Lists", query) == 1) {
+  if (da->datecheck("Lists", query.c_str()) == 1) {
     list = cards_search(query);
-    da->db_exec("Lists", query, cachecard(list));
+    const char* str = cachecard(list).c_str();
+    da->db_exec("Lists", query.c_str(), (byte*)str, strlen(str)+1);
   } else {
-    vector<string> names = explode(da->db_exec("Lists", query), '\n');
+    size_t size = 0;
+    vector<string> names = explode((char*)da->db_exec("Lists", query.c_str(), &size), '\n');
     string data = "{\"data\":[";
     for (int i = 0; i < names.size(); i++)
-      data += da->db_exec("Cards", nameformat(names[i])) + ',';
+      data += string((char*)da->db_exec("Cards", nameformat(names[i]).c_str(), &size)) + ',';
     data.pop_back();
     data += "],\"has_more\":false}";
     list = new List(data.c_str());
@@ -113,7 +116,7 @@ List * Scry::cards_search_cache(string query) {
 Card * Scry::cards_named(string query) {
   query = urlformat(query);
   string url = "https://api.scryfall.com/cards/named?fuzzy=" + query;
-  Card * card = new Card(wa->api_call(url));
+  Card * card = new Card((char*)wa->api_call(url).response);
   cards.push_back(card);
   return card;
 }
@@ -124,22 +127,48 @@ Card * Scry::cards_named_cache(string query) {
   query[0] = toupper(query[0]);
   string name = nameformat(query);
 
-  if (da->datecheck("Cards", name) == 1) {
+  if (da->datecheck("Cards", name.c_str()) == 1) {
     card = cards_named(query);
-    da->db_exec("Cards", name, nameformat(card->json()));
+    const char* str = nameformat(card->json()).c_str();
+    da->db_exec("Cards", name.c_str(), (byte*)str, strlen(str)+1);
   } else {
-    card = new Card( da->db_exec("Cards", name).c_str() );
+    size_t size = 0;
+    card = new Card( (char*)da->db_exec("Cards", name.c_str(), &size) );
     cards.push_back(card);
   }
 
   return card;
 }
 
+byte * Scry::cards_named(string query, size_t *size) {
+  query = urlformat(query);
+  string url = "https://api.scryfall.com/cards/named?fuzzy=" + query + "&format=image&version=border_crop";
+  struct WebAccess::memory mem = wa->api_call(url);
+  *size = mem.size;
+  return mem.response;
+}
+
+byte * Scry::cards_named_cache(string query, size_t *size) {
+  query = urlformat(query);
+  byte *image;
+  query[0] = toupper(query[0]);
+  string name = nameformat(query);
+
+  if (da->datecheck("Images", name.c_str()) == 1) {
+    image = cards_named(query, size);
+    da->db_exec("Images", name.c_str(), image, *size);
+  } else {
+    image = da->db_exec("Images", name.c_str(), size);
+  }
+
+  return image;
+}
+
 vector<string> Scry::cards_autocomplete(string query) {
   query = urlformat(query);
   string url = "https://api.scryfall.com/cards/autocomplete?q=" + query;
   Document doc;
-  doc.Parse(wa->api_call(url));
+  doc.Parse((char*)wa->api_call(url).response);
   const Value& a = doc["data"];
   vector<string> output;
   for (auto& v : a.GetArray()) output.push_back(v.GetString());
@@ -150,12 +179,14 @@ vector<string> Scry::cards_autocomplete_cache(string query) {
   query = urlformat(query);
   vector<string> names;
 
-  if (da->datecheck("Autocompletes", query) == 1) {
+  if (da->datecheck("Autocompletes", query.c_str()) == 1) {
     names = cards_autocomplete(query);
     string namestr = implode(names, '\n');
-    da->db_exec("Autocompletes", query, nameformat(namestr));
+    const char* str = nameformat(namestr).c_str();
+    da->db_exec("Autocompletes", query.c_str(), (byte*)str, strlen(str)+1);
   } else {
-    names = explode(da->db_exec("Autocompletes", query), '\n');
+    size_t size = 0;
+    names = explode((char*)da->db_exec("Autocompletes", query.c_str(), &size), '\n');
   }
 
   return names;
@@ -163,7 +194,7 @@ vector<string> Scry::cards_autocomplete_cache(string query) {
 
 Card * Scry::cards_random() {
   string url = "https://api.scryfall.com/cards/random";
-  Card * card = new Card(wa->api_call(url));
+  Card * card = new Card((char*)wa->api_call(url).response);
   cards.push_back(card);
   return card;
 }
