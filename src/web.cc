@@ -80,7 +80,7 @@ size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
   mem->response = ptr;
   memcpy(&(mem->response[mem->size]), data, realsize);
   mem->size += realsize;
-  mem->response[mem->size] = (byte)0;
+  //mem->response[mem->size] = (byte)0;
   return realsize;
 }
 
@@ -126,6 +126,7 @@ struct WebAccess::memory WebAccess::api_call(string url) {
   for (size_t i = 0; i < min((size_t)250, chunk.size); i++) cerr << (char)chunk.response[i];
   cerr << endl;
 #endif
+  chunk.response[chunk.size] = (byte)'\0';
 
   curl_easy_cleanup(eh);
   return chunk;
@@ -185,6 +186,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
 	cerr << "Transfer num: " << to_string(num) << endl;
         mtx.unlock();
 #endif
+	chunks[num].response[chunks[num].size] = (byte)'\0';
 	output[num].reserve(strlen((char*)chunks[num].response));
 	output[num].assign((char*)chunks[num].response);
 #ifdef DEBUG

@@ -46,6 +46,7 @@ class Scry {
     ///Splits a card into it's multiple faces. Useful because some cards won't have certain data in the conglomerate.
     virtual vector<Card *> split(Card * card);
   private:
+    typedef struct { size_t len, max; char* str; } cstring_t;
     WebAccess * wa;
     DataAccess * da;
     vector<Card *> cards;
@@ -56,4 +57,5 @@ class Scry {
     virtual string nameformat(string str);
     virtual string cachecard(List * list);
     virtual List * allcards(List * list);
+    virtual void string_cat(cstring_t*, const char*);
 };

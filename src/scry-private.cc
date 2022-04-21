@@ -93,3 +93,19 @@ List * Scry::allcards(List * list) {
   } else newlist = list;
   return newlist;
 }
+
+void Scry::string_cat(cstring_t* dest, const char* src) {
+  size_t newlen = strlen(src);
+#ifdef DEBUG
+  cerr << "String cat: " << dest->len << ", " << dest->max << ", " << newlen << endl;
+#endif
+  if (dest->max < newlen+dest->len) {
+    dest->max = max(dest->max * 2, newlen+dest->len+1);
+#ifdef DEBUG
+    cerr << "Realloc to size: " << dest->max << endl;
+#endif
+    dest->str = (char*)realloc(dest->str, dest->max);
+  }
+  strcpy(dest->str + dest->len, src);
+  dest->len += newlen;
+}

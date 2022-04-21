@@ -48,3 +48,8 @@ string Card::json() {
   data.Accept(writer);
   return buffer.GetString();
 }
+
+string Card::loyalty() {
+  if (!data.HasMember("loyalty")) return "";
+  return data["loyalty"].GetString();
+}

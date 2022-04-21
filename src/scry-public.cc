@@ -99,15 +99,23 @@ List * Scry::cards_search_cache(string query) {
     const char* str = cachecard(list).c_str();
     da->db_exec("Lists", query.c_str(), (byte*)str, strlen(str)+1);
   } else {
+    cstring_t data; data.len = 0; data.max = 0; data.str = NULL;
     size_t size = 0;
     vector<string> names = explode((char*)da->db_exec("Lists", query.c_str(), &size), '\n');
-    string data = "{\"data\":[";
-    for (int i = 0; i < names.size(); i++)
-      data += string((char*)da->db_exec("Cards", nameformat(names[i]).c_str(), &size)) + ',';
-    data.pop_back();
-    data += "],\"has_more\":false}";
-    list = new List(data.c_str());
+    string_cat(&data, "{\"data\":[");
+    for (size_t i = 0; i < names.size(); i++) {
+      string_cat(&data, (char*)da->db_exec("Cards", names[i].c_str(), &size));
+      string_cat(&data, ",");
+    }
+    data.len--;
+    string_cat(&data, "],\"has_more\":false}");
+#ifdef DEBUG
+    string str(data.str);
+    cerr << "New list (last 50 chars): " << str.substr(str.length()-50, 50) << endl;
+#endif
+    list = new List(data.str);
     lists.push_back(list);
+    free(data.str);
   }
 
   return list;

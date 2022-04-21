@@ -32,6 +32,8 @@ class Card {
     virtual bool dual_sided();
     ///Get the raw json text of the card provided by Scryfall.
     virtual string json();
+    ///Get the starting loyalty of the card
+    virtual string loyalty();
   private:
     Document data;
 };

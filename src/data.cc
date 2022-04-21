@@ -129,8 +129,8 @@ byte* DataAccess::sql_read(sqlite3 *pDb, const char* cmd, size_t* size) {
   byte* output = (byte*)malloc(sizeof(byte)*(*size) + 1);
   bytes.push_back(output);
 #ifdef DEBUG
-  cerr << "Database returned: ";
-  for (size_t i = 0; i < *size; i++) cerr << (char)rawoutput[i];
+  cerr << "Database returned (250 chars): ";
+  for (size_t i = 0; i < min((size_t)250, *size); i++) cerr << (char)rawoutput[i];
   cerr << endl;
 #endif
   memcpy(output, rawoutput, *size);
@@ -156,6 +156,10 @@ void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size
     sqlite3_finalize(stmt);
     exit(1);
   }
+#ifdef DEBUG
+  if (rc == SQLITE_ROW)
+    cerr << "Write returned: " << (char*)sqlite3_column_blob(stmt, 0) << endl;
+#endif
   sqlite3_finalize(stmt);
 }
 
