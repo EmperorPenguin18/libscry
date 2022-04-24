@@ -6,18 +6,25 @@
 
 using namespace std;
 
-vector<string> Scry::explode(const string& str, const char& ch) {
-  string next;
-  vector<string> result;
-  for (string::const_iterator it = str.begin(); it != str.end(); it++) {
-    if (*it == ch) {
-      if (!next.empty()) {
-        result.push_back(next);
-        next.clear();
+vector<char*> Scry::explode(const char* str, const char& ch) {
+#ifdef DEBUG
+  cerr << "Exploding: " << str << endl;
+#endif
+  cstring_t next; next.len = 0; next.max = 0; next.str = NULL;
+  vector<char*> result;
+  for (size_t i = 0; i < strlen(str); i++) {
+    if (str[i] == ch) {
+      if (next.str) {
+	string_cat(&next, '\0');
+#ifdef DEBUG
+	cerr << "Line " << result.size() << ": " << next.str << endl;
+#endif
+        result.push_back(next.str);
+        next.len = 0; next.max = 0; next.str = NULL;
       }
-    } else next += *it;
+    } else string_cat(&next, str[i]);
   }
-  if (!next.empty()) result.push_back(next);
+  if (next.str) result.push_back(next.str);
   return result;
 }
 
@@ -29,38 +36,104 @@ string Scry::implode(const vector<string>& strs, const char& ch) {
   return result;
 }
 
-string Scry::urlformat(string str) {
-  regex space(" ");
-  regex colon(":");
-  regex lt("<");
-  regex gt(">");
-  str = regex_replace(str, space, "%20");
-  str = regex_replace(str, colon, "%3A");
-  str = regex_replace(str, lt, "%3C");
-  str = regex_replace(str, gt, "%3E");
-  return str;
+void Scry::replace(char* str, char c, const char* s) {
+#ifdef DEBUG
+  cerr << "Replacing: " << str << endl;
+#endif
+  size_t length = strlen(str);
+  for (size_t i = 0; i < length; i++) {
+    if (str[i] == c) {
+      size_t length_s = strlen(s);
+      char temp[length_s] = "";
+      char prev[length_s] = "";
+      strcat(prev, s);
+      length += length_s-1;
+      if (!str) {
+	fprintf(stderr, "not enough memory: realloc returned null");
+	exit(1);
+      }
+      str[i] = prev[0];
+      for (size_t j = i; j < length; j+=length_s-1) {
+	for (size_t k = 1; k < length_s; k++) {
+	  temp[k] = str[j+k];
+	  str[j+k] = prev[k];
+	  prev[k] = temp[k];
+	}
+      }
+      i += length_s-1;
+    }
+  }
+#ifdef DEBUG
+  cerr << "Replaced with: " << str << endl;
+#endif
 }
 
-string Scry::nameformat(string str) {
-  regex apos("'");
-  str = regex_replace(str, apos, "''");
-  return str;
+void Scry::firstupper(char* str) {
+#ifdef DEBUG
+   cerr << "First upper input: " << str << endl;
+#endif
+   for(int i = 0; i < strlen(str); i++) {
+      if (i == 0 || str[i-1] == ' ' || str[i-1] == '-') {
+         if(str[i] >= 'a' && str[i] <= 'z') {
+            str[i] = (char)(('A'-'a') + str[i] );
+         }
+      }
+   }
+#ifdef DEBUG
+   cerr << "First upper output: " << str << endl;
+#endif
 }
 
-string Scry::cachecard(List * list) {
-  string output = "";
-  vector <Card *> cards = list->cards();
-  vector<string> names;
-  vector<string> data;
+char* Scry::urlformat(const string& str) {
+  char* output = (char*)malloc(sizeof(char)*str.length()*3+1);
+  if (!output) {
+    fprintf(stderr, "not enough memory: malloc returned null");
+    exit(1);
+  }
+  strcpy(output, str.c_str());
+  replace(output, ' ', "%20");
+  replace(output, ':', "%3A");
+  replace(output, '<', "%3C");
+  replace(output, '>', "%3E");
+#ifdef DEBUG
+  cerr << "URL formatted to: " << output << endl;
+#endif
+  return output;
+}
+
+char* Scry::nameformat(const string& str) {
+  char* output = (char*)malloc(sizeof(char)*str.length()*2+1);
+  if (!output) {
+    fprintf(stderr, "not enough memory: malloc returned null");
+    exit(1);
+  }
+  strcpy(output, str.c_str());
+  replace(output, '\'', "''");
+  firstupper(output);
+#ifdef DEBUG
+  cerr << "Name formatted to: " << output << endl;
+#endif
+  return output;
+}
+
+char* Scry::cachecard(List* list) {
+  cstring_t output; output.len = 0; output.max = 0; output.str = NULL;
+  vector<Card*> cards = list->cards();
+  vector<char*> names;
+  vector<char*> data;
   for (int i = 0; i < cards.size(); i++) {
-    string name = nameformat(cards[i]->name());
-    output += name + "\n";
+    char* name = nameformat(cards[i]->name());
+    string_cat(&output, name);
+    string_cat(&output, "\n"); 
     names.push_back(name);
-    data.push_back( nameformat(cards[i]->json()) );
+    string json = cards[i]->json();
+    char* cstr = new char[json.length()+1];
+    strcpy(cstr, json.c_str());
+    data.push_back(cstr);
   }
   da->db_exec("Cards", names, data);
-  output.pop_back();
-  return output;
+  output.len--;
+  return output.str;
 }
 
 List * Scry::allcards(List * list) {
@@ -84,7 +157,7 @@ List * Scry::allcards(List * list) {
     newlist = new List(two);
     lists.push_back(newlist);
     while (newlist->nextPage() != "") {
-      string extrapage = (char*)wa->api_call(newlist->nextPage() + to_string(i)).response;
+      string extrapage = wa->api_call(newlist->nextPage() + to_string(i));
       two.push_back(extrapage);
       newlist = new List(two);
       lists.push_back(newlist);
@@ -105,7 +178,30 @@ void Scry::string_cat(cstring_t* dest, const char* src) {
     cerr << "Realloc to size: " << dest->max << endl;
 #endif
     dest->str = (char*)realloc(dest->str, dest->max);
+    if (!dest->str) {
+      fprintf(stderr, "not enough memory: realloc returned null");
+      exit(1);
+    }
   }
   strcpy(dest->str + dest->len, src);
   dest->len += newlen;
+}
+
+void Scry::string_cat(cstring_t* dest, char c) {
+#ifdef DEBUG
+  cerr << "String cat: " << dest->len << ", " << dest->max << ", 1" << endl;
+#endif
+  if (dest->max < 1+dest->len) {
+    dest->max = max(dest->max * 2, dest->len+2);
+#ifdef DEBUG
+    cerr << "Realloc to size: " << dest->max << endl;
+#endif
+    dest->str = (char*)realloc(dest->str, dest->max);
+    if (!dest->str) {
+      fprintf(stderr, "not enough memory: realloc returned null");
+      exit(1);
+    }
+  }
+  dest->str[dest->len] = c;
+  dest->len += 1;
 }

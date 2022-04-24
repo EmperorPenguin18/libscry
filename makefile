@@ -13,3 +13,4 @@ install: src/*.h libscry.so
 clean:
 	rm -f libscry.so
 	rm -f examples/simple
+	rm -f examples/test

@@ -71,15 +71,15 @@ WebAccess::~WebAccess() {
 size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
   size_t realsize = size * nmemb;
   struct memory *mem = (struct memory *)userp;
-  byte *ptr = (byte *)realloc(mem->response, mem->size + realsize + 1);
+  byte *ptr = (byte *)realloc(mem->response, *(mem->size) + realsize + 1);
   if (!ptr) {
     /* out of memory */
     fprintf(stderr, "not enough memory (realloc returned NULL)\n");
     return 0;
   }
   mem->response = ptr;
-  memcpy(&(mem->response[mem->size]), data, realsize);
-  mem->size += realsize;
+  memcpy(&(mem->response[*(mem->size)]), data, realsize);
+  *(mem->size) += realsize;
   //mem->response[mem->size] = (byte)0;
   return realsize;
 }
@@ -88,6 +88,7 @@ CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
 #ifdef DEBUG
   cerr << "Adding url: " << url << endl;
 #endif
+  *(chunk->size) = 0;
   CURL *eh = curl_easy_init();
   curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
   curl_easy_setopt(eh, CURLOPT_HTTPGET, 1);
@@ -110,10 +111,11 @@ void WebAccess::checkurl(string url) {
   }
 }
 
-struct WebAccess::memory WebAccess::api_call(string url) {
+byte* WebAccess::api_call(string url, size_t* size) {
   checkurl(url);
 
   struct memory chunk = {0};
+  chunk.size = size;
   CURL *eh = add_transfer(url, &chunk, 0);
 
   CURLcode res = curl_easy_perform(eh);
@@ -123,13 +125,19 @@ struct WebAccess::memory WebAccess::api_call(string url) {
   }
 #ifdef DEBUG
   cerr << "First 250 chars of response: ";
-  for (size_t i = 0; i < min((size_t)250, chunk.size); i++) cerr << (char)chunk.response[i];
+  for (size_t i = 0; i < min((size_t)250, *(chunk.size)); i++) cerr << (char)chunk.response[i];
   cerr << endl;
 #endif
-  chunk.response[chunk.size] = (byte)'\0';
 
   curl_easy_cleanup(eh);
-  return chunk;
+  return chunk.response;
+}
+
+char* WebAccess::api_call(string url) {
+  size_t size = 0;
+  char* output = (char*)api_call(url, &size);
+  output[size] = '\0';
+  return output;
 }
 
 vector<string> WebAccess::start_multi(vector<string> urls) {
@@ -147,6 +155,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
   unsigned int conns = min(urls.size(), conn_per_thread);
   vector<string> output(conns);
   struct memory chunks[conns];
+  size_t sizes[conns];
 
   cm = curl_multi_init();
   curl_multi_setopt(cm, CURLMOPT_MAXCONNECTS, conn_per_thread);
@@ -154,6 +163,8 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
   for (transfers = 0; transfers < conns; transfers++) {
     checkurl(urls[transfers]);
     chunks[transfers] = {0};
+    sizes[transfers] = 0;
+    chunks[transfers].size = &sizes[transfers];
     curl_multi_add_handle(cm, add_transfer(urls[transfers], &chunks[transfers], transfers));
   }
 #ifdef DEBUG
@@ -186,7 +197,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
 	cerr << "Transfer num: " << to_string(num) << endl;
         mtx.unlock();
 #endif
-	chunks[num].response[chunks[num].size] = (byte)'\0';
+	chunks[num].response[*(chunks[num].size)] = (byte)'\0';
 	output[num].reserve(strlen((char*)chunks[num].response));
 	output[num].assign((char*)chunks[num].response);
 #ifdef DEBUG

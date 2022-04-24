@@ -14,7 +14,7 @@ using namespace rapidjson;
 ///This class is used to represent a single card
 class Card {
   public:
-    Card(const char * rawjson);
+    Card(const char*);
   
     ///Get the name (Storm Crow) of the card.
     virtual string name();

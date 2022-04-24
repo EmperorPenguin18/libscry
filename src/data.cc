@@ -50,17 +50,15 @@ DataAccess::DataAccess(const char *name) {
     exit(1);
   }
   db_copy(0);
-  size_t size = 0;
-  sql_write(db, "pragma journal_mode = WAL;", NULL, size);
-  sql_write(db, "pragma synchronous = normal;", NULL, size);
-  sql_write(db, "pragma temp_store = memory;", NULL, size);
-  sql_write(db, "pragma mmap_size = 30000000000;", NULL, size);
-  sql_write(db, "pragma locking_mode = exclusive;", NULL, size);
+  sql_exec(db, "pragma journal_mode = WAL;");
+  sql_exec(db, "pragma synchronous = normal;");
+  sql_exec(db, "pragma temp_store = memory;");
+  sql_exec(db, "pragma mmap_size = 30000000000;");
+  sql_exec(db, "pragma locking_mode = exclusive;");
 }
 
 DataAccess::~DataAccess() {
-  size_t size = 0;
-  sql_write(db, "pragma optimize;", NULL, size);
+  sql_exec(db, "pragma optimize;");
   db_copy(1);
   sqlite3_close(db);
   dlclose(sqlite3_lib);
@@ -78,7 +76,7 @@ void DataAccess::db_copy(int isSave) {
   sqlite3 *pFile;
   int rc = sqlite3_open(fname, &pFile);
   if (rc == SQLITE_OK) {
-    size_t size = 0;
+    /*size_t size = 0;
     char* page_size = (isSave ? (char*)sql_read(db, "PRAGMA PAGE_SIZE;", &size) : (char*)sql_read(pFile, "PRAGMA PAGE_SIZE;", &size) );
 #ifdef DEBUG
     cerr << "Page size: " << (char*)page_size << endl;
@@ -87,7 +85,7 @@ void DataAccess::db_copy(int isSave) {
     strcat(cmd, page_size);
     strcat(cmd, ";");
     if (isSave) sql_write(pFile, cmd, NULL, size);
-    else sql_write(db, cmd, NULL, size);
+    else sql_write(db, cmd, NULL, size);*/
     sqlite3 *pFrom = (isSave ? db     : pFile);
     sqlite3 *pTo   = (isSave ? pFile  :    db);
     sqlite3_backup *pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
@@ -126,15 +124,18 @@ byte* DataAccess::sql_read(sqlite3 *pDb, const char* cmd, size_t* size) {
     return nullptr;
   }
   *size = sqlite3_column_bytes(stmt, 0);
-  byte* output = (byte*)malloc(sizeof(byte)*(*size) + 1);
-  bytes.push_back(output);
 #ifdef DEBUG
   cerr << "Database returned (250 chars): ";
   for (size_t i = 0; i < min((size_t)250, *size); i++) cerr << (char)rawoutput[i];
   cerr << endl;
 #endif
+  byte* output = (byte*)malloc(sizeof(byte)*(*size) + 1);
+  if (!output) {
+    fprintf(stderr, "not enough memory: malloc returned null");
+    exit(1);
+  }
   memcpy(output, rawoutput, *size);
-  output[*size] = (byte)'\0';
+  bytes.push_back(output);
   sqlite3_finalize(stmt);
   return output;
 }
@@ -149,6 +150,11 @@ void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size
     fprintf(stderr, "SQL compile error: %s\n", sqlite3_errmsg(pDb));
     exit(1);
   }
+#ifdef DEBUG
+  cerr << "Data input (250 chars): ";
+  for (size_t i = 0; i < min((size_t)250, size); i++) cerr << (char)data[i];
+  cerr << endl;
+#endif
   rc = sqlite3_bind_blob(stmt, 1, data, size, SQLITE_STATIC);
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_ROW && rc != SQLITE_DONE) {
@@ -163,11 +169,28 @@ void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size
   sqlite3_finalize(stmt);
 }
 
+void DataAccess::sql_exec(sqlite3 *pDb, const char* cmd) {
+#ifdef DEBUG
+  cerr << "Sql call: " << cmd << endl;
+#endif
+  int rc = sqlite3_exec(pDb, cmd, NULL, NULL, NULL);
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "SQL exec error: %s\n", sqlite3_errmsg(pDb));
+    exit(1);
+  }
+}
+
 int DataAccess::datecheck(const char* table, const char* search) {
-  string cmd = "SELECT Updated FROM " + string(table) + " WHERE Key='" + string(search) + "';";
+  char cmd[200] = "";
+  strcat(cmd, "SELECT Updated FROM ");
+  strcat(cmd, table);
+  strcat(cmd, " WHERE Key='");
+  strcat(cmd, search);
+  strcat(cmd, "';");
   size_t size = 0;
-  const char* rawdatetime = (char*)sql_read(db, cmd.c_str(), &size);
+  char* rawdatetime = (char*)sql_read(db, cmd, &size);
   if (!rawdatetime) return 1;
+  rawdatetime[size] = '\0';
   string datetime = string(rawdatetime);
 
   const time_point<system_clock> now{system_clock::now()};
@@ -202,26 +225,48 @@ void DataAccess::db_exec(const char* table) {
   cerr << "Creating table: " << table << endl;
 #endif
   string cmd = "CREATE TABLE IF NOT EXISTS " + string(table) + "(Key TEXT NOT NULL, Updated DATETIME NOT NULL, Value BLOB NOT NULL, PRIMARY KEY(Key));";
-  size_t size = 0;
-  sql_write(db, cmd.c_str(), NULL, size);
+  sql_exec(db, cmd.c_str());
 }
 
 byte* DataAccess::db_exec(const char* table, const char* key, size_t* size) {
-  string cmd = "SELECT Value FROM " + string(table) + " WHERE Key='" + string(key) + "';";
-  return sql_read(db, cmd.c_str(), size);
+  char cmd[200] = "";
+  strcat(cmd, "SELECT Value FROM ");
+  strcat(cmd, table);
+  strcat(cmd, " WHERE Key='");
+  strcat(cmd, key);
+  strcat(cmd, "';");
+  return sql_read(db, cmd, size);
+}
+
+char* DataAccess::db_exec(const char* table, const char* key) {
+  size_t size = 0;
+  char* output = (char*)db_exec(table, key, &size);
+  output[size] = '\0';
+  return output;
 }
 
 void DataAccess::db_exec(const char* table, const char* key, byte* value, const size_t& size) {
-  string cmd = "REPLACE INTO " + string(table) + " VALUES ('" + string(key) + "', datetime(), ?);";
-  sql_write(db, cmd.c_str(), value, size);
+  char cmd[200] = "";
+  strcat(cmd, "REPLACE INTO ");
+  strcat(cmd, table);
+  strcat(cmd, " VALUES ('");
+  strcat(cmd, key);
+  strcat(cmd, "', datetime(), ?);");
+  sql_write(db, cmd, value, size);
 }
 
-void DataAccess::db_exec(const char* table, vector<string> key, vector<string> value) {
-  size_t size = 0;
-  sql_write(db, "BEGIN TRANSACTION", NULL, size);
-  for (int i = 0; i < key.size(); i++) {
-    string cmd = "REPLACE INTO " + string(table) + " VALUES ('" + key[i] + "', datetime(), '" + value[i] + "');";
-    sql_write(db, cmd.c_str(), NULL, size);
+void DataAccess::db_exec(const char* table, vector<char*> keys, vector<char*> values) {
+  sql_exec(db, "BEGIN TRANSACTION;");
+  for (int i = 0; i < keys.size(); i++) {
+    char cmd[10000] = "";
+    strcat(cmd, "REPLACE INTO ");
+    strcat(cmd, table);
+    strcat(cmd, " VALUES ('");
+    strcat(cmd, keys[i]);
+    strcat(cmd, "', datetime(), ?);");
+    sql_write(db, cmd, (byte*)values[i], strlen(values[i]));
+    free(keys[i]);
+    delete[] values[i];
   }
-  sql_write(db, "END TRANSACTION", NULL, size);
+  sql_exec(db, "END TRANSACTION;");
 }

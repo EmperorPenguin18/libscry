@@ -35,49 +35,50 @@ class WebAccess {
     WebAccess(long, size_t);
     ~WebAccess();
     
-    struct memory {
-      byte *response;
-      size_t size;
-    };
-    virtual struct memory api_call(string url);
+    virtual byte* api_call(string, size_t*);
+    virtual char* api_call(string);
     virtual vector<string> api_call(vector<string>);
   private:
     void construct();
-    void * curl_lib;
+    void* curl_lib;
     typedef CURL* (*cgi_handle)(int);
     cgi_handle curl_global_init;
     typedef CURL* (*cei_handle)();
     cei_handle curl_easy_init;
-    typedef CURLcode (*ces_handle)(CURL *, CURLoption, ...);
+    typedef CURLcode (*ces_handle)(CURL*, CURLoption, ...);
     ces_handle curl_easy_setopt;
-    typedef CURLcode (*cep_handle)(CURL *);
+    typedef CURLcode (*cep_handle)(CURL*);
     cep_handle curl_easy_perform;
-    typedef void (*cec_handle)(CURL *);
+    typedef void (*cec_handle)(CURL*);
     cec_handle curl_easy_cleanup;
     typedef void (*cgc_handle)();
     cgc_handle curl_global_cleanup;
     typedef const char* (*cee_handle)(CURLcode);
     cee_handle curl_easy_strerror;
-    typedef CURLMcode (*cma_handle)(CURLM *, CURL *);
+    typedef CURLMcode (*cma_handle)(CURLM*, CURL*);
     cma_handle curl_multi_add_handle;
     typedef CURLM* (*cmi_handle)();
     cmi_handle curl_multi_init;
-    typedef CURLMcode (*cms_handle)(CURLM *, CURLMoption, ...);
+    typedef CURLMcode (*cms_handle)(CURLM*, CURLMoption, ...);
     cms_handle curl_multi_setopt;
-    typedef CURLMcode (*cmp_handle)(CURLM *, int *);
+    typedef CURLMcode (*cmp_handle)(CURLM*, int*);
     cmp_handle curl_multi_perform;
-    typedef CURLMsg* (*cmn_handle)(CURLM *, int *);
+    typedef CURLMsg* (*cmn_handle)(CURLM*, int*);
     cmn_handle curl_multi_info_read;
-    typedef CURLcode (*ceg_handle)(CURL *, CURLINFO, ...);
+    typedef CURLcode (*ceg_handle)(CURL*, CURLINFO, ...);
     ceg_handle curl_easy_getinfo;
-    typedef CURLMcode (*cmr_handle)(CURLM *, CURL *);
+    typedef CURLMcode (*cmr_handle)(CURLM*, CURL*);
     cmr_handle curl_multi_remove_handle;
-    typedef CURLMcode (*cmw_handle)(CURLM *, struct curl_waitfd[], unsigned int, int, int *);
+    typedef CURLMcode (*cmw_handle)(CURLM*, struct curl_waitfd[], unsigned int, int, int*);
     cmw_handle curl_multi_wait;
-    typedef CURLMcode (*cmc_handle)(CURLM *);
+    typedef CURLMcode (*cmc_handle)(CURLM*);
     cmc_handle curl_multi_cleanup;
 
-    static size_t cb(void *data, size_t size, size_t nmemb, void *userp);
+    static size_t cb(void*, size_t, size_t, void*);
+    struct memory {
+      byte* response;
+      size_t* size;
+    };
 
     vector<string> approved_urls;
     void checkurl(string);
@@ -85,7 +86,7 @@ class WebAccess {
     duration<long, ratio<1,1000>> delay;
     steady_clock::time_point prev_time;
     size_t conn_per_thread;
-    CURL * add_transfer(string, struct memory *, int);
+    CURL* add_transfer(string, struct memory*, int);
     mutex mtx;
     vector<string> start_multi(vector<string>);
 };

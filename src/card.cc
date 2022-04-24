@@ -8,6 +8,7 @@ using namespace std;
 
 Card::Card(const char * rawjson) {
   data.Parse(rawjson);
+  if (strcmp(data["object"].GetString(), "error") == 0) throw "Invalid Card";
 }
 
 string Card::name() {

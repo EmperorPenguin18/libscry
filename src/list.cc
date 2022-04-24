@@ -26,6 +26,7 @@ List::List(vector<string> rawjsons) {
 
 void List::construct(const char * rawjson) {
   data.Parse(rawjson);
+  if (strcmp(data["object"].GetString(), "error") == 0) throw "Invalid List";
 #ifdef DEBUG
   if (data.IsObject()) cerr << "JSON is valid" << endl;
 #endif
