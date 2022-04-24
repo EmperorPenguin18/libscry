@@ -21,7 +21,7 @@ make
 make install #as root
 ```
 ## Documentation
-Available in [docs](docs/)
+Available in [docs](docs/) and [examples](examples/)
 ## Legal
 From the API Docs:
 
