@@ -1,0 +1,262 @@
+//libscry by Sebastien MacDougall-Landry
+//License is available at
+//https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
+
+#include "web.h"
+
+using namespace std;
+using namespace std::chrono;
+
+WebAccess::WebAccess() {
+  delay = duration<long, ratio<1,1000>>(50);
+  conn_per_thread = 10;
+  construct();
+}
+
+WebAccess::WebAccess(vector<string> approved_urls) : approved_urls(approved_urls) {
+  delay = duration<long, ratio<1,1000>>(50);
+  conn_per_thread = 10;
+  construct();
+}
+
+WebAccess::WebAccess(vector<string> approved_urls, long delay) : approved_urls(approved_urls), delay(delay) {
+  conn_per_thread = 10;
+  construct();
+}
+
+WebAccess::WebAccess(vector<string> approved_urls, long delay, size_t conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
+  construct();
+}
+
+WebAccess::WebAccess(long delay) : delay(delay) {
+  conn_per_thread = 10;
+  construct();
+}
+
+WebAccess::WebAccess(long delay, size_t conn_per_thread) : delay(delay), conn_per_thread(conn_per_thread) {
+  construct();
+}
+
+void WebAccess::construct() {
+  curl_lib = dlopen("libcurl.so", RTLD_LAZY | RTLD_DEEPBIND);
+  if (!curl_lib) {
+    fprintf(stderr, "%s\n", dlerror());
+    exit(EXIT_FAILURE);
+  }
+  curl_global_init = reinterpret_cast<cgi_handle>(dlsym(curl_lib, "curl_global_init"));
+  curl_easy_init = reinterpret_cast<cei_handle>(dlsym(curl_lib, "curl_easy_init"));
+  curl_easy_setopt = reinterpret_cast<ces_handle>(dlsym(curl_lib, "curl_easy_setopt"));
+  curl_easy_perform = reinterpret_cast<cep_handle>(dlsym(curl_lib, "curl_easy_perform"));
+  curl_easy_cleanup = reinterpret_cast<cec_handle>(dlsym(curl_lib, "curl_easy_cleanup"));
+  curl_global_cleanup = reinterpret_cast<cgc_handle>(dlsym(curl_lib, "curl_global_cleanup"));
+  curl_easy_strerror = reinterpret_cast<cee_handle>(dlsym(curl_lib, "curl_easy_strerror"));
+  curl_multi_add_handle = reinterpret_cast<cma_handle>(dlsym(curl_lib, "curl_multi_add_handle"));
+  curl_multi_init = reinterpret_cast<cmi_handle>(dlsym(curl_lib, "curl_multi_init"));
+  curl_multi_setopt = reinterpret_cast<cms_handle>(dlsym(curl_lib, "curl_multi_setopt"));
+  curl_multi_perform = reinterpret_cast<cmp_handle>(dlsym(curl_lib, "curl_multi_perform"));
+  curl_multi_info_read = reinterpret_cast<cmn_handle>(dlsym(curl_lib, "curl_multi_info_read"));
+  curl_easy_getinfo = reinterpret_cast<ceg_handle>(dlsym(curl_lib, "curl_easy_getinfo"));
+  curl_multi_remove_handle = reinterpret_cast<cmr_handle>(dlsym(curl_lib, "curl_multi_remove_handle"));
+  curl_multi_wait = reinterpret_cast<cmw_handle>(dlsym(curl_lib, "curl_multi_wait"));
+  curl_multi_cleanup = reinterpret_cast<cmc_handle>(dlsym(curl_lib, "curl_multi_cleanup"));
+
+  curl_global_init(CURL_GLOBAL_ALL);
+}
+
+WebAccess::~WebAccess() {
+  curl_global_cleanup();
+  dlclose(curl_lib);
+}
+
+size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
+  size_t realsize = size * nmemb;
+  struct memory *mem = (struct memory *)userp;
+  byte *ptr = (byte *)realloc(mem->response, *(mem->size) + realsize + 1);
+  if (!ptr) {
+    /* out of memory */
+    fprintf(stderr, "not enough memory (realloc returned NULL)\n");
+    return 0;
+  }
+  mem->response = ptr;
+  memcpy(&(mem->response[*(mem->size)]), data, realsize);
+  *(mem->size) += realsize;
+  //mem->response[mem->size] = (byte)0;
+  return realsize;
+}
+
+CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
+#ifdef DEBUG
+  cerr << "Adding url: " << url << endl;
+#endif
+  *(chunk->size) = 0;
+  CURL *eh = curl_easy_init();
+  curl_easy_setopt(eh, CURLOPT_FOLLOWLOCATION, 1);
+  curl_easy_setopt(eh, CURLOPT_HTTPGET, 1);
+  curl_easy_setopt(eh, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+  curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, cb);
+  curl_easy_setopt(eh, CURLOPT_WRITEDATA, (void *)chunk);
+  curl_easy_setopt(eh, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(eh, CURLOPT_PRIVATE, num);
+  return eh;
+}
+
+void WebAccess::checkurl(string url) {
+  regex first(".*//");
+  regex last("/.*");
+  url = regex_replace(url, first, "");
+  url = regex_replace(url, last, "");
+  if ( std::find(approved_urls.begin(), approved_urls.end(), url) == approved_urls.end() ) {
+    fprintf(stderr, "Attempted to use unapproved url: %s\n", url.c_str());
+    exit(EXIT_FAILURE);
+  }
+}
+
+byte* WebAccess::api_call(string url, size_t* size) {
+  checkurl(url);
+
+  struct memory chunk = {0};
+  chunk.size = size;
+  CURL *eh = add_transfer(url, &chunk, 0);
+
+  CURLcode res = curl_easy_perform(eh);
+  if (res != CURLE_OK) {
+    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+    exit(res);
+  }
+#ifdef DEBUG
+  cerr << "First 250 chars of response: ";
+  for (size_t i = 0; i < min((size_t)250, *(chunk.size)); i++) cerr << (char)chunk.response[i];
+  cerr << endl;
+#endif
+
+  curl_easy_cleanup(eh);
+  return chunk.response;
+}
+
+char* WebAccess::api_call(string url) {
+  size_t size = 0;
+  char* output = (char*)api_call(url, &size);
+  output[size] = '\0';
+  return output;
+}
+
+vector<string> WebAccess::start_multi(vector<string> urls) {
+#ifdef DEBUG
+  mtx.lock();
+  cerr << "All urls: " << endl;
+  for (int i = 0; i < urls.size(); i++) cerr << urls[i] << endl;
+  mtx.unlock();
+#endif
+  CURLM *cm;
+  CURLMsg *msg;
+  unsigned int transfers = 0;
+  int msgs_left = -1;
+  int still_alive = 1;
+  unsigned int conns = min(urls.size(), conn_per_thread);
+  vector<string> output(conns);
+  struct memory chunks[conns];
+  size_t sizes[conns];
+
+  cm = curl_multi_init();
+  curl_multi_setopt(cm, CURLMOPT_MAXCONNECTS, conn_per_thread);
+
+  for (transfers = 0; transfers < conns; transfers++) {
+    checkurl(urls[transfers]);
+    chunks[transfers] = {0};
+    sizes[transfers] = 0;
+    chunks[transfers].size = &sizes[transfers];
+    curl_multi_add_handle(cm, add_transfer(urls[transfers], &chunks[transfers], transfers));
+  }
+#ifdef DEBUG
+  mtx.lock();
+  cerr << "Handles added" << endl;
+  mtx.unlock();
+#endif
+
+  do {
+    duration<long, ratio<1,1000>> time_span = duration_cast<duration<long, ratio<1,1000>>>(steady_clock::now() - prev_time);
+    if (time_span > delay) {
+      curl_multi_perform(cm, &still_alive);
+      mtx.lock();
+      prev_time = steady_clock::now();
+      mtx.unlock();
+    }
+
+    while ((msg = curl_multi_info_read(cm, &msgs_left))) {
+#ifdef DEBUG
+      mtx.lock();
+      cerr << "Msg ready" << endl;
+      mtx.unlock();
+#endif
+      if (msg->msg == CURLMSG_DONE) {
+	int num;
+	CURL *e = msg->easy_handle;
+	curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &num);
+#ifdef DEBUG
+        mtx.lock();
+	cerr << "Transfer num: " << to_string(num) << endl;
+        mtx.unlock();
+#endif
+	chunks[num].response[*(chunks[num].size)] = (byte)'\0';
+	output[num].reserve(strlen((char*)chunks[num].response));
+	output[num].assign((char*)chunks[num].response);
+#ifdef DEBUG
+        mtx.lock();
+	cerr << "First 250 chars of response: " << output[num].substr(0, 250) << endl;
+        mtx.unlock();
+#endif
+	curl_multi_remove_handle(cm, e);
+	curl_easy_cleanup(e);
+      }
+      else {
+        fprintf(stderr, "E: CURLMsg (%d)\n", msg->msg);
+      }
+    }
+    if (still_alive)
+      curl_multi_wait(cm, NULL, 0, 1000, NULL);
+
+  } while (still_alive || (transfers < urls.size()));
+
+  curl_multi_cleanup(cm);
+  return output;
+}
+
+vector<string> WebAccess::api_call(vector<string> urls) {
+  unsigned available_threads = thread::hardware_concurrency()-1; //Not actual max, but keeps things reasonable
+  unsigned used_threads = static_cast<unsigned>(ceil(
+    static_cast<float>(urls.size()) / static_cast<float>(conn_per_thread)
+  ));
+#ifdef DEBUG
+  cerr << "Available threads: " << to_string(available_threads) << endl
+    << "Used threads: " << to_string(used_threads) << endl;
+#endif
+  if ( (available_threads > 0) && (available_threads >= used_threads) ) {
+    vector<string> output;
+    vector<future<vector<string>>> threads(used_threads);
+    for (int i = 0; i < used_threads; i++) {
+      vector<string> data( min(conn_per_thread, urls.size()-i*conn_per_thread) );
+      for (int j = 0; j < data.size(); j++) data.at(j) = urls.at(i*conn_per_thread+j);
+#ifdef DEBUG
+      mtx.lock();
+      cerr << "Thread " << to_string(i) << " is getting: " << endl;
+      for (int j = 0; j < data.size(); j++) cerr << data.at(j) << endl;
+      mtx.unlock();
+#endif
+      threads.at(i) = async(&WebAccess::start_multi, this, data);
+    }
+    for (int i = 0; i < used_threads; i++) {
+      vector<string> newdata = threads[i].get();
+      for (int j = 0; j < newdata.size(); j++) {
+#ifdef DEBUG
+	mtx.lock();
+	cerr << "Adding to output: " << newdata[j].substr(0, 10) << endl;
+	mtx.unlock();
+#endif
+	output.push_back(newdata[j]);
+      }
+    }
+    return output;
+  }
+  start_multi(urls);
+  return urls;
+}
