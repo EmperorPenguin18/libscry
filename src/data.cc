@@ -258,7 +258,7 @@ void DataAccess::db_exec(const char* table, const char* key, byte* value, const 
 void DataAccess::db_exec(const char* table, vector<char*> keys, vector<char*> values) {
   sql_exec(db, "BEGIN TRANSACTION;");
   for (int i = 0; i < keys.size(); i++) {
-    char cmd[10000] = "";
+    char cmd[200] = "";
     strcat(cmd, "REPLACE INTO ");
     strcat(cmd, table);
     strcat(cmd, " VALUES ('");
