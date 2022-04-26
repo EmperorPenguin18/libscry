@@ -11,11 +11,6 @@
 #include <dlfcn.h>
 #include <sqlite3.h>
 
-#ifdef DEBUG
-#include <iostream>
-#include <algorithm>
-#endif
-
 using namespace std;
 
 ///This class is used to access the database

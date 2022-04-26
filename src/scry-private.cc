@@ -8,7 +8,7 @@ using namespace std;
 
 vector<char*> Scry::explode(const char* str, const char& ch) {
 #ifdef DEBUG
-  cerr << "Exploding: " << str << endl;
+  fprintf(stderr, "Exploding: %s\n", str);
 #endif
   cstring_t next; next.len = 0; next.max = 0; next.str = NULL;
   vector<char*> result;
@@ -17,7 +17,7 @@ vector<char*> Scry::explode(const char* str, const char& ch) {
       if (next.str) {
 	string_cat(&next, '\0');
 #ifdef DEBUG
-	cerr << "Line " << result.size() << ": " << next.str << endl;
+	fprintf(stderr, "Line %d: %s\n", result.size(), next.str);
 #endif
         result.push_back(next.str);
         next.len = 0; next.max = 0; next.str = NULL;
@@ -38,7 +38,7 @@ string Scry::implode(const vector<string>& strs, const char& ch) {
 
 void Scry::replace(char* str, char c, const char* s) {
 #ifdef DEBUG
-  cerr << "Replacing: " << str << endl;
+  fprintf(stderr, "Replacing: %s\n", str);
 #endif
   size_t length = strlen(str);
   for (size_t i = 0; i < length; i++) {
@@ -48,10 +48,6 @@ void Scry::replace(char* str, char c, const char* s) {
       char prev[length_s] = "";
       strcat(prev, s);
       length += length_s-1;
-      if (!str) {
-	fprintf(stderr, "not enough memory: realloc returned null");
-	exit(1);
-      }
       str[i] = prev[0];
       for (size_t j = i; j < length; j+=length_s-1) {
 	for (size_t k = 1; k < length_s; k++) {
@@ -64,13 +60,13 @@ void Scry::replace(char* str, char c, const char* s) {
     }
   }
 #ifdef DEBUG
-  cerr << "Replaced with: " << str << endl;
+  fprintf(stderr, "Replaced with: %s\n", str);
 #endif
 }
 
 void Scry::firstupper(char* str) {
 #ifdef DEBUG
-   cerr << "First upper input: " << str << endl;
+   fprintf(stderr, "First upper input: %s\n", str);
 #endif
    for(int i = 0; i < strlen(str); i++) {
       if (i == 0 || str[i-1] == ' ' || str[i-1] == '-') {
@@ -80,7 +76,7 @@ void Scry::firstupper(char* str) {
       }
    }
 #ifdef DEBUG
-   cerr << "First upper output: " << str << endl;
+   fprintf(stderr, "First upper output: %s\n", str);
 #endif
 }
 
@@ -96,7 +92,7 @@ char* Scry::urlformat(const string& str) {
   replace(output, '<', "%3C");
   replace(output, '>', "%3E");
 #ifdef DEBUG
-  cerr << "URL formatted to: " << output << endl;
+  fprintf(stderr, "URL formatted to: %s\n", output);
 #endif
   return output;
 }
@@ -111,7 +107,7 @@ char* Scry::nameformat(const string& str) {
   replace(output, '\'', "''");
   firstupper(output);
 #ifdef DEBUG
-  cerr << "Name formatted to: " << output << endl;
+  fprintf(stderr, "Name formatted to: %s\n", output);
 #endif
   return output;
 }
@@ -146,7 +142,7 @@ List * Scry::allcards(List * list) {
       )
     );
 #ifdef DEBUG
-    cerr << "# of pages: " << to_string(pages) << endl;
+    fprintf(stderr, "# of pages: %d\n", pages);
 #endif
     vector<string> urls;
     int i;
@@ -157,7 +153,10 @@ List * Scry::allcards(List * list) {
     newlist = new List(two);
     lists.push_back(newlist);
     while (newlist->nextPage() != "") {
-      string extrapage = wa->api_call(newlist->nextPage() + to_string(i));
+      char url[newlist->nextPage().size()+4] = "";
+      strcat(url, newlist->nextPage().c_str());
+      sprintf(url, "%s%d", url, i);
+      string extrapage = wa->api_call(url);
       two.push_back(extrapage);
       newlist = new List(two);
       lists.push_back(newlist);
@@ -170,12 +169,12 @@ List * Scry::allcards(List * list) {
 void Scry::string_cat(cstring_t* dest, const char* src) {
   size_t newlen = strlen(src);
 #ifdef DEBUG
-  cerr << "String cat: " << dest->len << ", " << dest->max << ", " << newlen << endl;
+  fprintf(stderr, "String cat: %d, %d, %d\n", dest->len, dest->max, newlen);
 #endif
   if (dest->max < newlen+dest->len) {
     dest->max = max(dest->max * 2, newlen+dest->len+1);
 #ifdef DEBUG
-    cerr << "Realloc to size: " << dest->max << endl;
+    fprintf(stderr, "Realloc to size: %d\n", dest->max);
 #endif
     dest->str = (char*)realloc(dest->str, dest->max);
     if (!dest->str) {
@@ -189,12 +188,12 @@ void Scry::string_cat(cstring_t* dest, const char* src) {
 
 void Scry::string_cat(cstring_t* dest, char c) {
 #ifdef DEBUG
-  cerr << "String cat: " << dest->len << ", " << dest->max << ", 1" << endl;
+  fprintf(stderr, "String cat: %d, %d, 1\n", dest->len, dest->max);
 #endif
   if (dest->max < 1+dest->len) {
     dest->max = max(dest->max * 2, dest->len+2);
 #ifdef DEBUG
-    cerr << "Realloc to size: " << dest->max << endl;
+    fprintf(stderr, "Realloc to size: %d\n", dest->max);
 #endif
     dest->str = (char*)realloc(dest->str, dest->max);
     if (!dest->str) {

@@ -13,18 +13,18 @@ WebAccess::WebAccess() {
   construct();
 }
 
-WebAccess::WebAccess(vector<string> approved_urls) : approved_urls(approved_urls) {
+WebAccess::WebAccess(vector<const char*> approved_urls) : approved_urls(approved_urls) {
   delay = duration<long, ratio<1,1000>>(50);
   conn_per_thread = 10;
   construct();
 }
 
-WebAccess::WebAccess(vector<string> approved_urls, long delay) : approved_urls(approved_urls), delay(delay) {
+WebAccess::WebAccess(vector<const char*> approved_urls, long delay) : approved_urls(approved_urls), delay(delay) {
   conn_per_thread = 10;
   construct();
 }
 
-WebAccess::WebAccess(vector<string> approved_urls, long delay, size_t conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
+WebAccess::WebAccess(vector<const char*> approved_urls, long delay, size_t conn_per_thread) : approved_urls(approved_urls), delay(delay), conn_per_thread(conn_per_thread) {
   construct();
 }
 
@@ -38,7 +38,7 @@ WebAccess::WebAccess(long delay, size_t conn_per_thread) : delay(delay), conn_pe
 }
 
 void WebAccess::construct() {
-  curl_lib = dlopen("libcurl.so", RTLD_LAZY | RTLD_DEEPBIND);
+  curl_lib = dlopen("libcurl.so", RTLD_LAZY);
   if (!curl_lib) {
     fprintf(stderr, "%s\n", dlerror());
     exit(EXIT_FAILURE);
@@ -84,9 +84,9 @@ size_t WebAccess::cb(void *data, size_t size, size_t nmemb, void *userp) {
   return realsize;
 }
 
-CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
+CURL * WebAccess::add_transfer(const char* url, struct memory* chunk, int num) {
 #ifdef DEBUG
-  cerr << "Adding url: " << url << endl;
+  fprintf(stderr, "Adding url: %s\n", url);
 #endif
   *(chunk->size) = 0;
   CURL *eh = curl_easy_init();
@@ -95,23 +95,57 @@ CURL * WebAccess::add_transfer(string url, struct memory* chunk, int num) {
   curl_easy_setopt(eh, CURLOPT_USERAGENT, "libcurl-agent/1.0");
   curl_easy_setopt(eh, CURLOPT_WRITEFUNCTION, cb);
   curl_easy_setopt(eh, CURLOPT_WRITEDATA, (void *)chunk);
-  curl_easy_setopt(eh, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(eh, CURLOPT_URL, url);
   curl_easy_setopt(eh, CURLOPT_PRIVATE, num);
   return eh;
 }
 
-void WebAccess::checkurl(string url) {
-  regex first(".*//");
-  regex last("/.*");
-  url = regex_replace(url, first, "");
-  url = regex_replace(url, last, "");
-  if ( std::find(approved_urls.begin(), approved_urls.end(), url) == approved_urls.end() ) {
-    fprintf(stderr, "Attempted to use unapproved url: %s\n", url.c_str());
-    exit(EXIT_FAILURE);
+void WebAccess::replace(char* str, const char* s) {
+#ifdef DEBUG
+  fprintf(stderr, "Replacing: %s\n", str);
+#endif
+  size_t length = strlen(str);
+  size_t length_s = strlen(s);
+  for (size_t i = 0; i < length-length_s; i++) {
+    if (strncmp(str+i, s, length_s) == 0) {
+      for (size_t j = i; j < length-length_s; j++) {
+	str[j] = str[j+length_s];
+      }
+      length -= length_s;
+    }
   }
+#ifdef DEBUG
+  fprintf(stderr, "Replaced with: %s\n", str);
+#endif
 }
 
-byte* WebAccess::api_call(string url, size_t* size) {
+void WebAccess::checkurl(const char* url) {
+#ifdef DEBUG
+  mtx.lock();
+  fprintf(stderr, "Checking URL: %s\n", url);
+  mtx.unlock();
+#endif
+  char* temp = (char*)malloc(sizeof(char)*strlen(url)+1);
+  strcpy(temp, url);
+  replace(temp, "https://");
+  char* temp2 = (char*)calloc(strlen(temp), sizeof(char)*strlen(temp)+1);
+  strncpy(temp2, temp, strchr(temp, '/')-temp);
+#ifdef DEBUG
+  mtx.lock();
+  fprintf(stderr, "Relevant section: %s\n", temp2);
+  mtx.unlock();
+#endif
+  size_t i;
+  for (i = 0; i < approved_urls.size(); i++) if (strcmp(approved_urls[i], temp2) == 0) break;
+  if (i == approved_urls.size()) {
+    fprintf(stderr, "Attempted to use unapproved url: %s\n", temp2);
+    exit(EXIT_FAILURE);
+  }
+  free(temp);
+  free(temp2);
+}
+
+byte* WebAccess::api_call(const char* url, size_t* size) {
   checkurl(url);
 
   struct memory chunk = {0};
@@ -124,16 +158,17 @@ byte* WebAccess::api_call(string url, size_t* size) {
     exit(res);
   }
 #ifdef DEBUG
-  cerr << "First 250 chars of response: ";
-  for (size_t i = 0; i < min((size_t)250, *(chunk.size)); i++) cerr << (char)chunk.response[i];
-  cerr << endl;
+  fprintf(stderr, "First 250 chars of response: ");
+  if (*(chunk.size) < 250) for (size_t i = 0; i < *(chunk.size); i++) fprintf(stderr, "%c", (char)chunk.response[i]);
+  else for (size_t i = 0; i < 250; i++) fprintf(stderr, "%c", (char)chunk.response[i]);
+  fprintf(stderr, "\n");
 #endif
 
   curl_easy_cleanup(eh);
   return chunk.response;
 }
 
-char* WebAccess::api_call(string url) {
+char* WebAccess::api_call(const char* url) {
   size_t size = 0;
   char* output = (char*)api_call(url, &size);
   output[size] = '\0';
@@ -143,8 +178,8 @@ char* WebAccess::api_call(string url) {
 vector<string> WebAccess::start_multi(vector<string> urls) {
 #ifdef DEBUG
   mtx.lock();
-  cerr << "All urls: " << endl;
-  for (int i = 0; i < urls.size(); i++) cerr << urls[i] << endl;
+  fprintf(stderr, "All urls: \n");
+  for (int i = 0; i < urls.size(); i++) fprintf(stderr, "%s\n", urls[i].c_str());
   mtx.unlock();
 #endif
   CURLM *cm;
@@ -161,15 +196,15 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
   curl_multi_setopt(cm, CURLMOPT_MAXCONNECTS, conn_per_thread);
 
   for (transfers = 0; transfers < conns; transfers++) {
-    checkurl(urls[transfers]);
+    checkurl(urls[transfers].c_str());
     chunks[transfers] = {0};
     sizes[transfers] = 0;
     chunks[transfers].size = &sizes[transfers];
-    curl_multi_add_handle(cm, add_transfer(urls[transfers], &chunks[transfers], transfers));
+    curl_multi_add_handle(cm, add_transfer(urls[transfers].c_str(), &chunks[transfers], transfers));
   }
 #ifdef DEBUG
   mtx.lock();
-  cerr << "Handles added" << endl;
+  fprintf(stderr, "Handles added\n");
   mtx.unlock();
 #endif
 
@@ -185,7 +220,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
     while ((msg = curl_multi_info_read(cm, &msgs_left))) {
 #ifdef DEBUG
       mtx.lock();
-      cerr << "Msg ready" << endl;
+      fprintf(stderr, "Msg ready\n");
       mtx.unlock();
 #endif
       if (msg->msg == CURLMSG_DONE) {
@@ -194,7 +229,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
 	curl_easy_getinfo(msg->easy_handle, CURLINFO_PRIVATE, &num);
 #ifdef DEBUG
         mtx.lock();
-	cerr << "Transfer num: " << to_string(num) << endl;
+	fprintf(stderr, "Transfer num: %d\n", num);
         mtx.unlock();
 #endif
 	chunks[num].response[*(chunks[num].size)] = (byte)'\0';
@@ -202,7 +237,7 @@ vector<string> WebAccess::start_multi(vector<string> urls) {
 	output[num].assign((char*)chunks[num].response);
 #ifdef DEBUG
         mtx.lock();
-	cerr << "First 250 chars of response: " << output[num].substr(0, 250) << endl;
+	fprintf(stderr, "First 250 chars of response: %.250s\n", output[num].c_str());
         mtx.unlock();
 #endif
 	curl_multi_remove_handle(cm, e);
@@ -227,8 +262,7 @@ vector<string> WebAccess::api_call(vector<string> urls) {
     static_cast<float>(urls.size()) / static_cast<float>(conn_per_thread)
   ));
 #ifdef DEBUG
-  cerr << "Available threads: " << to_string(available_threads) << endl
-    << "Used threads: " << to_string(used_threads) << endl;
+  fprintf(stderr, "Available threads: %d\nUsed threads: %d\n", available_threads, used_threads);
 #endif
   if ( (available_threads > 0) && (available_threads >= used_threads) ) {
     vector<string> output;
@@ -238,8 +272,8 @@ vector<string> WebAccess::api_call(vector<string> urls) {
       for (int j = 0; j < data.size(); j++) data.at(j) = urls.at(i*conn_per_thread+j);
 #ifdef DEBUG
       mtx.lock();
-      cerr << "Thread " << to_string(i) << " is getting: " << endl;
-      for (int j = 0; j < data.size(); j++) cerr << data.at(j) << endl;
+      fprintf(stderr, "Thread %d is getting: \n", i);
+      for (int j = 0; j < data.size(); j++) fprintf(stderr, "%s\n", data.at(j).c_str());
       mtx.unlock();
 #endif
       threads.at(i) = async(&WebAccess::start_multi, this, data);
@@ -249,7 +283,7 @@ vector<string> WebAccess::api_call(vector<string> urls) {
       for (int j = 0; j < newdata.size(); j++) {
 #ifdef DEBUG
 	mtx.lock();
-	cerr << "Adding to output: " << newdata[j].substr(0, 10) << endl;
+	fprintf(stderr, "Adding to output: %.10s\n", newdata[j].c_str());
 	mtx.unlock();
 #endif
 	output.push_back(newdata[j]);

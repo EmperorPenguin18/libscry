@@ -16,8 +16,8 @@ List::List(vector<string> rawjsons) {
   for (int i = 0; i < rawjsons.size(); i++) {
     str += rawjsons[i] + '\n';
 #ifdef DEBUG
-    cerr << "Last ten chars: " << rawjsons[i].substr(rawjsons[i].length()-10, 10) << endl;
-    cerr << "Size: " << rawjsons[i].size() << endl << "Capacity: " << rawjsons[i].capacity() << endl;
+    fprintf(stderr, "Last ten chars: %s\n", rawjsons[i].c_str()+rawjsons[i].size()-10);
+    fprintf(stderr, "Size: %d\nCapacity: %d\n", rawjsons[i].size(), rawjsons[i].capacity());
 #endif
     construct(rawjsons[i].c_str());
   }
@@ -28,7 +28,7 @@ void List::construct(const char * rawjson) {
   data.Parse(rawjson);
   if (strcmp(data["object"].GetString(), "error") == 0) throw "Invalid List";
 #ifdef DEBUG
-  if (data.IsObject()) cerr << "JSON is valid" << endl;
+  if (data.IsObject()) fprintf(stderr, "JSON is valid\n");
 #endif
   for (int i = 0; i < data["data"].Size(); i++) {
     StringBuffer buffer;
@@ -45,7 +45,7 @@ void List::construct(const char * rawjson) {
     smatch sm2; regex_search(url, sm2, q);
     smatch sm3; regex_search(url, sm3, page);
 #ifdef DEBUG
-    cerr << "Regex 1: " << sm1[0] << endl << "Regex 2: " << sm2[0] << endl << "Regex 3: " << sm3[0] << endl;
+    fprintf(stderr, "Regex 1: %s\nRegex 2: %s\nRegex 3: %s\n", sm1[0].str().c_str(), sm2[0].str().c_str(), sm3[0].str().c_str());
 #endif
     nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, 5);
   } else nextpage = "";

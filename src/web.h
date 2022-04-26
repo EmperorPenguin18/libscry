@@ -8,19 +8,12 @@
 #include <vector>
 #include <chrono>
 #include <ratio>
-#include <algorithm>
-#include <regex>
 #include <future>
 #include <mutex>
 #include <cmath>
-#include <functional>
 #include <csignal>
 #include <dlfcn.h>
 #include <curl/curl.h>
-
-#ifdef DEBUG
-#include <iostream>
-#endif
 
 using namespace std;
 using namespace std::chrono;
@@ -28,18 +21,18 @@ using namespace std::chrono;
 class WebAccess {
   public:
     WebAccess();
-    WebAccess(vector<string>);
-    WebAccess(vector<string>, long);
-    WebAccess(vector<string>, long, size_t);
+    WebAccess(vector<const char*>);
+    WebAccess(vector<const char*>, long);
+    WebAccess(vector<const char*>, long, size_t);
     WebAccess(long);
     WebAccess(long, size_t);
     ~WebAccess();
     
-    virtual byte* api_call(string, size_t*);
-    virtual char* api_call(string);
+    virtual byte* api_call(const char*, size_t*);
+    virtual char* api_call(const char*);
     virtual vector<string> api_call(vector<string>);
   private:
-    void construct();
+    virtual void construct();
     void* curl_lib;
     typedef CURL* (*cgi_handle)(int);
     cgi_handle curl_global_init;
@@ -80,13 +73,14 @@ class WebAccess {
       size_t* size;
     };
 
-    vector<string> approved_urls;
-    void checkurl(string);
+    vector<const char*> approved_urls;
+    virtual void replace(char*, const char*);
+    virtual void checkurl(const char*);
 
     duration<long, ratio<1,1000>> delay;
     steady_clock::time_point prev_time;
     size_t conn_per_thread;
-    CURL* add_transfer(string, struct memory*, int);
+    virtual CURL* add_transfer(const char*, struct memory*, int);
     mutex mtx;
-    vector<string> start_multi(vector<string>);
+    virtual vector<string> start_multi(vector<string>);
 };

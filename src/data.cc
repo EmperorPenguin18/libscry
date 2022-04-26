@@ -70,22 +70,9 @@ DataAccess::~DataAccess() {
 }
 
 void DataAccess::db_copy(int isSave) {
-#ifdef DEBUG
-  cerr << "DB Copy:" << endl;
-#endif
   sqlite3 *pFile;
   int rc = sqlite3_open(fname, &pFile);
   if (rc == SQLITE_OK) {
-    /*size_t size = 0;
-    char* page_size = (isSave ? (char*)sql_read(db, "PRAGMA PAGE_SIZE;", &size) : (char*)sql_read(pFile, "PRAGMA PAGE_SIZE;", &size) );
-#ifdef DEBUG
-    cerr << "Page size: " << (char*)page_size << endl;
-#endif
-    char cmd[30] = "pragma page_size = ";
-    strcat(cmd, page_size);
-    strcat(cmd, ";");
-    if (isSave) sql_write(pFile, cmd, NULL, size);
-    else sql_write(db, cmd, NULL, size);*/
     sqlite3 *pFrom = (isSave ? db     : pFile);
     sqlite3 *pTo   = (isSave ? pFile  :    db);
     sqlite3_backup *pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
@@ -104,7 +91,7 @@ void DataAccess::db_copy(int isSave) {
 
 byte* DataAccess::sql_read(sqlite3 *pDb, const char* cmd, size_t* size) {
 #ifdef DEBUG
-  cerr << "Sql call: " << cmd << endl;
+  fprintf(stderr, "Sql call: %s\n", cmd);
 #endif
   sqlite3_stmt *stmt;
   int rc = sqlite3_prepare_v2(pDb, cmd, -1, &stmt, NULL);
@@ -125,9 +112,10 @@ byte* DataAccess::sql_read(sqlite3 *pDb, const char* cmd, size_t* size) {
   }
   *size = sqlite3_column_bytes(stmt, 0);
 #ifdef DEBUG
-  cerr << "Database returned (250 chars): ";
-  for (size_t i = 0; i < min((size_t)250, *size); i++) cerr << (char)rawoutput[i];
-  cerr << endl;
+  fprintf(stderr, "Database returned (250 chars): ");
+  if (*size < 250) for (size_t i = 0; i < *size; i++) fprintf(stderr, "%c", (char)rawoutput[i]);
+  else for (size_t i = 0; i < 250; i++) fprintf(stderr, "%c", (char)rawoutput[i]);
+  fprintf(stderr, "\n");
 #endif
   byte* output = (byte*)malloc(sizeof(byte)*(*size) + 1);
   if (!output) {
@@ -142,7 +130,7 @@ byte* DataAccess::sql_read(sqlite3 *pDb, const char* cmd, size_t* size) {
 
 void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size_t& size) {
 #ifdef DEBUG
-  cerr << "Sql call: " << cmd << endl;
+  fprintf(stderr, "Sql call: %s\n", cmd);
 #endif
   sqlite3_stmt *stmt;
   int rc = sqlite3_prepare_v2(pDb, cmd, -1, &stmt, NULL);
@@ -151,9 +139,10 @@ void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size
     exit(1);
   }
 #ifdef DEBUG
-  cerr << "Data input (250 chars): ";
-  for (size_t i = 0; i < min((size_t)250, size); i++) cerr << (char)data[i];
-  cerr << endl;
+  fprintf(stderr, "Data input (250 chars): ");
+  if (size < 250) for (size_t i = 0; i < size; i++) fprintf(stderr, "%c", (char)data[i]);
+  else for (size_t i = 0; i < 250; i++) fprintf(stderr, "%c", (char)data[i]);
+  fprintf(stderr, "\n");
 #endif
   rc = sqlite3_bind_blob(stmt, 1, data, size, SQLITE_STATIC);
   rc = sqlite3_step(stmt);
@@ -164,14 +153,14 @@ void DataAccess::sql_write(sqlite3 *pDb, const char* cmd, byte* data, const size
   }
 #ifdef DEBUG
   if (rc == SQLITE_ROW)
-    cerr << "Write returned: " << (char*)sqlite3_column_blob(stmt, 0) << endl;
+    fprintf(stderr, "Write returned: %s\n", (char*)sqlite3_column_blob(stmt, 0));
 #endif
   sqlite3_finalize(stmt);
 }
 
 void DataAccess::sql_exec(sqlite3 *pDb, const char* cmd) {
 #ifdef DEBUG
-  cerr << "Sql call: " << cmd << endl;
+  fprintf(stderr, "Sql call: %s\n", cmd);
 #endif
   int rc = sqlite3_exec(pDb, cmd, NULL, NULL, NULL);
   if (rc != SQLITE_OK) {
@@ -221,9 +210,6 @@ int DataAccess::datecheck(const char* table, const char* search) {
 }
 
 void DataAccess::db_exec(const char* table) {
-#ifdef DEBUG
-  cerr << "Creating table: " << table << endl;
-#endif
   string cmd = "CREATE TABLE IF NOT EXISTS " + string(table) + "(Key TEXT NOT NULL, Updated DATETIME NOT NULL, Value BLOB NOT NULL, PRIMARY KEY(Key));";
   sql_exec(db, cmd.c_str());
 }

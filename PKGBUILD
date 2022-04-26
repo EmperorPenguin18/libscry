@@ -1,7 +1,7 @@
 # Maintainer: Sebastien MacDougall-Landry
 
 pkgname=libscry
-pkgver=0.2
+pkgver=0.3
 pkgrel=1
 pkgdesc='A Magic: The Gathering library'
 url='https://github.com/EmperorPenguin18/libscry/'
@@ -13,11 +13,11 @@ sha256sums=('3c35bee0e7383f704f2ff59ae100a708c0c36772d0b1b375c481587a6cea3622')
 
 build () {
   cd "$srcdir/$pkgname-$pkgver"
-  g++ -std=c++20 -fPIC -shared src/*.cc -o libscry.so
+  g++ -O3 -std=c++20 -pthread -fPIC -shared src/*.cc -o libscry.so
 }
 
 package () {
   cd "$srcdir/$pkgname-$pkgver"
   install -Dm755 libscry.so -t "$pkgdir/usr/lib"
-  install -Dm644 libscry.h -t "$pkgdir/usr/include"
+  install -Dm644 src/*.h -t "$pkgdir/usr/include"
 }
