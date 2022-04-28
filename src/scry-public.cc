@@ -148,6 +148,7 @@ Card* Scry::cards_named(string in) {
 Card* Scry::cards_named_cache(string in) {
   Card* card;
   char* name = nameformat(in);
+  firstupper(name);
 
   if (da->datecheck("Cards", name) == 1) {
     card = cards_named(in);
@@ -179,6 +180,7 @@ byte* Scry::cards_named(string in, size_t *size) {
 byte* Scry::cards_named_cache(string in, size_t *size) {
   byte* image;
   char* name = nameformat(in);
+  firstupper(name);
 
   if (da->datecheck("Images", name) == 1) {
     image = cards_named(in, size);

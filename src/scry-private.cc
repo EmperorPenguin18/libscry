@@ -105,7 +105,6 @@ char* Scry::nameformat(const string& str) {
   }
   strcpy(output, str.c_str());
   replace(output, '\'', "''");
-  firstupper(output);
 #ifdef DEBUG
   fprintf(stderr, "Name formatted to: %s\n", output);
 #endif
@@ -120,10 +119,10 @@ char* Scry::cachecard(List* list) {
   for (int i = 0; i < cards.size(); i++) {
     char* name = nameformat(cards[i]->name());
     string_cat(&output, name);
-    string_cat(&output, "\n"); 
+    string_cat(&output, '\n'); 
     names.push_back(name);
     string json = cards[i]->json();
-    char* cstr = new char[json.length()+1];
+    char* cstr = (char*)calloc(json.length()+1, sizeof(char)*json.length()+1);
     strcpy(cstr, json.c_str());
     data.push_back(cstr);
   }
