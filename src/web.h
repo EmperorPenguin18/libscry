@@ -3,34 +3,29 @@
 //https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
 
 #pragma once
-#include <string>
 #include <cstring>
 #include <vector>
-#include <chrono>
-#include <ratio>
 #include <future>
 #include <mutex>
 #include <cmath>
-#include <csignal>
 #include <dlfcn.h>
 #include <curl/curl.h>
 
 using namespace std;
-using namespace std::chrono;
 
 class WebAccess {
   public:
     WebAccess();
     WebAccess(vector<const char*>);
-    WebAccess(vector<const char*>, long);
-    WebAccess(vector<const char*>, long, size_t);
-    WebAccess(long);
-    WebAccess(long, size_t);
+    WebAccess(vector<const char*>, double);
+    WebAccess(vector<const char*>, double, size_t);
+    WebAccess(double);
+    WebAccess(double, size_t);
     ~WebAccess();
     
     virtual byte* api_call(const char*, size_t*);
     virtual char* api_call(const char*);
-    virtual vector<string> api_call(vector<string>);
+    virtual vector<char*> api_call(char**, size_t);
   private:
     virtual void construct();
     void* curl_lib;
@@ -74,13 +69,14 @@ class WebAccess {
     };
 
     vector<const char*> approved_urls;
-    virtual void replace(char*, const char*);
+    virtual char* strremove(char*, const char*);
     virtual void checkurl(const char*);
 
-    duration<long, ratio<1,1000>> delay;
-    steady_clock::time_point prev_time;
+    double delay;
+    clock_t prev_time;
     size_t conn_per_thread;
     virtual CURL* add_transfer(const char*, struct memory*, int);
     mutex mtx;
-    virtual vector<string> start_multi(vector<string>);
+    virtual CURL* add_transfer_multi(const char*, struct memory*, size_t);
+    virtual struct memory* start_multi(char**, size_t);
 };

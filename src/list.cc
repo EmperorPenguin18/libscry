@@ -7,24 +7,7 @@
 using namespace std;
 using namespace rapidjson;
 
-List::List(const char * rawjson) {
-  construct(rawjson);
-}
-
-List::List(vector<string> rawjsons) {
-  string str = "";
-  for (int i = 0; i < rawjsons.size(); i++) {
-    str += rawjsons[i] + '\n';
-#ifdef DEBUG
-    fprintf(stderr, "Last ten chars: %s\n", rawjsons[i].c_str()+rawjsons[i].size()-10);
-    fprintf(stderr, "Size: %d\nCapacity: %d\n", rawjsons[i].size(), rawjsons[i].capacity());
-#endif
-    construct(rawjsons[i].c_str());
-  }
-  data.Parse(str.c_str());
-}
-
-void List::construct(const char * rawjson) {
+void List::construct(char* rawjson) {
   data.Parse(rawjson);
   if (strcmp(data["object"].GetString(), "error") == 0) throw "Invalid List";
 #ifdef DEBUG
@@ -49,6 +32,14 @@ void List::construct(const char * rawjson) {
 #endif
     nextpage = string(sm1[0]) + string(sm2[0]) + string(sm3[0]).substr(0, 5);
   } else nextpage = "";
+}
+
+List::List(vector<char*> rawjson) {
+  for (int i = 0; i < rawjson.size(); i++) construct(rawjson[i]);
+}
+
+List::List(char* rawjson) {
+  construct(rawjson);
 }
 
 List::~List() {

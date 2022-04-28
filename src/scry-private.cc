@@ -81,7 +81,7 @@ void Scry::firstupper(char* str) {
 }
 
 char* Scry::urlformat(const string& str) {
-  char* output = (char*)malloc(sizeof(char)*str.length()*3+1);
+  char* output = (char*)calloc(str.length()*3, sizeof(char)*str.length()*3+1);
   if (!output) {
     fprintf(stderr, "not enough memory: malloc returned null");
     exit(1);
@@ -98,7 +98,7 @@ char* Scry::urlformat(const string& str) {
 }
 
 char* Scry::nameformat(const string& str) {
-  char* output = (char*)malloc(sizeof(char)*str.length()*2+1);
+  char* output = (char*)calloc(str.length()*2, sizeof(char)*str.length()*2+1);
   if (!output) {
     fprintf(stderr, "not enough memory: malloc returned null");
     exit(1);
@@ -132,8 +132,8 @@ char* Scry::cachecard(List* list) {
   return output.str;
 }
 
-List * Scry::allcards(List * list) {
-  List * newlist;
+List* Scry::allcards(List* list) {
+  List* newlist;
   if (list->nextPage() != "") {
     Document doc; doc.Parse(list->json().c_str());
     unsigned int pages = static_cast<int>(
@@ -144,21 +144,26 @@ List * Scry::allcards(List * list) {
 #ifdef DEBUG
     fprintf(stderr, "# of pages: %d\n", pages);
 #endif
-    vector<string> urls;
+    char** urls = (char**)malloc(sizeof(char*)*(pages-1));
     int i;
-    for (i = 2; i <= pages; i++) urls.push_back(list->nextPage() + to_string(i));
-    vector<string> one; one.push_back(list->json());
-    vector<string> two = wa->api_call(urls);
-    two.insert(two.begin(), one.begin(), one.end());
-    newlist = new List(two);
+    for (i = 1; i < pages; i++) {
+      urls[i-1] = (char*)calloc(list->nextPage().size()+4, list->nextPage().size()+4);
+      sprintf(urls[i-1], "%s%d", list->nextPage().c_str(), i+1);
+    }
+    vector<char*> results = wa->api_call(urls, pages-1);
+    for (int i = 0; i < pages-1; i++) free(urls[i]);
+    free(urls);
+    char str[list->json().size()+1] = "";
+    strcat(str, list->json().c_str());
+    results.insert(results.begin(), str);
+    newlist = new List(results);
     lists.push_back(newlist);
     while (newlist->nextPage() != "") {
       char url[newlist->nextPage().size()+4] = "";
-      strcat(url, newlist->nextPage().c_str());
-      sprintf(url, "%s%d", url, i);
-      string extrapage = wa->api_call(url);
-      two.push_back(extrapage);
-      newlist = new List(two);
+      sprintf(url, "%s%d", newlist->nextPage().c_str(), i);
+      char* extrapage = wa->api_call(url);
+      results.push_back(extrapage);
+      newlist = new List(results);
       lists.push_back(newlist);
       i++;
     }
