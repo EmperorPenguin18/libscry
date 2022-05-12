@@ -24,7 +24,13 @@ vector<char*> Scry::explode(const char* str, const char& ch) {
       }
     } else string_cat(&next, str[i]);
   }
-  if (next.str) result.push_back(next.str);
+  if (next.str) {
+    string_cat(&next, '\0');
+#ifdef DEBUG
+    fprintf(stderr, "Line %d: %s\n", result.size(), next.str);
+#endif
+    result.push_back(next.str);
+  }
   return result;
 }
 
@@ -128,6 +134,7 @@ char* Scry::cachecard(List* list) {
   }
   da->db_exec("Cards", names, data);
   output.len--;
+  string_cat(&output, '\0');
   return output.str;
 }
 
