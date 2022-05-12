@@ -86,6 +86,9 @@ int main(int argc, char **argv)
   cout << card->dual_sided() << endl;
   cout << card->json() << endl;
   cout << card->loyalty() << endl;
+  cout << card->set() << endl;
+  cout << card->price() << endl;
+  cout << card->legality()[0] << endl;
   cout << endl;
 
   cout << "cards_named(\"vannifar\", &img_size)" << endl;

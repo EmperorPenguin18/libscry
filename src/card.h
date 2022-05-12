@@ -4,6 +4,7 @@
 
 #pragma once
 #include <string>
+#include <vector>
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
@@ -34,6 +35,12 @@ class Card {
     virtual string json();
     ///Get the starting loyalty of the card
     virtual string loyalty();
+    ///Get the set name of the card
+    virtual string set();
+    ///Get the USD non-foil price of the most recent printing of the card
+    virtual string price();
+    ///Get the legalities (for most formats) of the card
+    virtual vector<string> legality();
   private:
     Document data;
 };
