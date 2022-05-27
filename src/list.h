@@ -10,15 +10,11 @@
 #include <rapidjson/stringbuffer.h>
 #include "card.h"
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 ///This class is used to represent a list of cards (returned from a search for example)
 class List {
   public:
-    List(const char*);
-    List(vector<string>);
+    List(char*);
+    List(vector<char*>);
     ~List();
   
     ///Returns a vector with all the cards on this page of the list. For cards on all pages see allcards().
@@ -31,6 +27,6 @@ class List {
     Document data;
     vector<Card*> content;
     string nextpage;
-    void construct(const char*);
+    virtual void construct(char*);
 };
 

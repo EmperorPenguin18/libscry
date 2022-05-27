@@ -3,43 +3,31 @@
 //https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
 
 #pragma once
-#include <string>
 #include <cstring>
 #include <vector>
-#include <chrono>
-#include <ratio>
-#include <algorithm>
-#include <regex>
 #include <future>
 #include <mutex>
 #include <cmath>
-#include <functional>
-#include <csignal>
 #include <dlfcn.h>
 #include <curl/curl.h>
 
-#ifdef DEBUG
-#include <iostream>
-#endif
-
 using namespace std;
-using namespace std::chrono;
 
 class WebAccess {
   public:
     WebAccess();
-    WebAccess(vector<string>);
-    WebAccess(vector<string>, long);
-    WebAccess(vector<string>, long, size_t);
-    WebAccess(long);
-    WebAccess(long, size_t);
+    WebAccess(vector<const char*>);
+    WebAccess(vector<const char*>, double);
+    WebAccess(vector<const char*>, double, size_t);
+    WebAccess(double);
+    WebAccess(double, size_t);
     ~WebAccess();
     
-    virtual byte* api_call(string, size_t*);
-    virtual char* api_call(string);
-    virtual vector<string> api_call(vector<string>);
+    virtual byte* api_call(const char*, size_t*);
+    virtual char* api_call(const char*);
+    virtual vector<char*> api_call(char**, size_t);
   private:
-    void construct();
+    virtual void construct();
     void* curl_lib;
     typedef CURL* (*cgi_handle)(int);
     cgi_handle curl_global_init;
@@ -80,13 +68,15 @@ class WebAccess {
       size_t* size;
     };
 
-    vector<string> approved_urls;
-    void checkurl(string);
+    vector<const char*> approved_urls;
+    virtual char* strremove(char*, const char*);
+    virtual void checkurl(const char*);
 
-    duration<long, ratio<1,1000>> delay;
-    steady_clock::time_point prev_time;
+    double delay;
+    clock_t prev_time;
     size_t conn_per_thread;
-    CURL* add_transfer(string, struct memory*, int);
+    virtual CURL* add_transfer(const char*, struct memory*, int);
     mutex mtx;
-    vector<string> start_multi(vector<string>);
+    virtual CURL* add_transfer_multi(const char*, struct memory*, size_t);
+    virtual struct memory* start_multi(char**, size_t);
 };

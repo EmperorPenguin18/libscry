@@ -20,7 +20,7 @@ Scry::Scry() {
   signal(SIGSEGV, print_stacktrace);
   signal(SIGABRT, print_stacktrace);
 #endif
-  vector<string> temp;
+  vector<const char*> temp;
   temp.push_back("api.scryfall.com");
   wa = new WebAccess(temp, 50, 20);
   da = new DataAccess("libscry");
@@ -72,12 +72,13 @@ void print_stacktrace(int signum) {
 #endif
 
 List* Scry::cards_search(string in) {
-  string query = string(urlformat(in));
-  string url = "https://api.scryfall.com/cards/search?q=" + query;
+  char* query = urlformat(in);
+  char url[strlen(query)+50] = "";
+  strcat(url, "https://api.scryfall.com/cards/search?q=");
+  strcat(url, query);
 #ifdef DEBUG
-  cerr << "URL: " << url << endl;
+  fprintf(stderr, "URL: %s\n", url);
 #endif
-  size_t size = 0;
   List* list;
   try {
     list = new List(wa->api_call(url));
@@ -85,13 +86,14 @@ List* Scry::cards_search(string in) {
     return nullptr;
   }
 #ifdef DEBUG
-  cerr << "First card: " << list->cards()[0]->name() << endl;
+  fprintf(stderr, "First card: %s\n", list->cards()[0]->name().c_str());
 #endif
   lists.push_back(list);
   List* full_list = allcards(list);
 #ifdef DEBUG
-  cerr << "Full first card: " << full_list->cards()[0]->name() << endl;
+  fprintf(stderr, "Full first card: %s\n", full_list->cards()[0]->name().c_str());
 #endif
+  free(query);
   return full_list;
 }
 
@@ -116,7 +118,7 @@ List* Scry::cards_search_cache(string in) {
     data.len--;
     string_cat(&data, "],\"has_more\":false}");
 #ifdef DEBUG
-    cerr << "New list (last 50 chars): " << &(data.str[strlen(data.str)-50]) << endl;
+    fprintf(stderr, "New list (last 50 chars): %s\n", data.str+strlen(data.str)-50);
 #endif
     list = new List(data.str);
     lists.push_back(list);
@@ -128,8 +130,10 @@ List* Scry::cards_search_cache(string in) {
 }
 
 Card* Scry::cards_named(string in) {
-  string query = string(urlformat(in));
-  string url = "https://api.scryfall.com/cards/named?fuzzy=" + query;
+  char* query = urlformat(in);
+  char url[strlen(query)+50] = "";
+  strcat(url, "https://api.scryfall.com/cards/named?fuzzy=");
+  strcat(url, query);
   Card* card;
   try {
     card = new Card(wa->api_call(url));
@@ -137,12 +141,14 @@ Card* Scry::cards_named(string in) {
     return nullptr;
   }
   cards.push_back(card);
+  free(query);
   return card;
 }
 
 Card* Scry::cards_named_cache(string in) {
   Card* card;
   char* name = nameformat(in);
+  firstupper(name);
 
   if (da->datecheck("Cards", name) == 1) {
     card = cards_named(in);
@@ -161,15 +167,20 @@ Card* Scry::cards_named_cache(string in) {
 }
 
 byte* Scry::cards_named(string in, size_t *size) {
-  string query = string(urlformat(in));
-  string url = "https://api.scryfall.com/cards/named?fuzzy=" + query + "&format=image&version=border_crop";
+  char* query = urlformat(in);
+  char url[strlen(query)+100] = "";
+  strcat(url, "https://api.scryfall.com/cards/named?fuzzy=");
+  strcat(url, query);
+  strcat(url, "&format=image&version=border_crop");
   byte* image = wa->api_call(url, size);
+  free(query);
   return image;
 }
 
 byte* Scry::cards_named_cache(string in, size_t *size) {
   byte* image;
   char* name = nameformat(in);
+  firstupper(name);
 
   if (da->datecheck("Images", name) == 1) {
     image = cards_named(in, size);
@@ -183,13 +194,16 @@ byte* Scry::cards_named_cache(string in, size_t *size) {
 }
 
 vector<string> Scry::cards_autocomplete(string in) {
-  string query = string(urlformat(in));
-  string url = "https://api.scryfall.com/cards/autocomplete?q=" + query;
+  char* query = urlformat(in);
+  char url[strlen(query)+50] = "";
+  strcat(url, "https://api.scryfall.com/cards/autocomplete?q=");
+  strcat(url, query);
   Document doc;
   doc.Parse(wa->api_call(url));
   const Value& a = doc["data"];
   vector<string> output;
   for (auto& v : a.GetArray()) output.push_back(v.GetString());
+  free(query);
   return output;
 }
 
@@ -212,7 +226,7 @@ vector<string> Scry::cards_autocomplete_cache(string in) {
 }
 
 Card* Scry::cards_random() {
-  string url = "https://api.scryfall.com/cards/random";
+  char url[50] = "https://api.scryfall.com/cards/random";
   Card* card = new Card(wa->api_call(url));
   cards.push_back(card);
   return card;

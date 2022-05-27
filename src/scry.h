@@ -3,7 +3,6 @@
 //https://github.com/EmperorPenguin18/libscry/blob/main/LICENSE
 
 #pragma once
-#include <iostream>
 #include "web.h"
 #include "data.h"
 #include "list.h"

@@ -54,3 +54,35 @@ string Card::loyalty() {
   if (!data.HasMember("loyalty")) return "";
   return data["loyalty"].GetString();
 }
+
+string Card::set() {
+  return data["set_name"].GetString();
+}
+
+string Card::price() {
+  return data["prices"]["usd"].GetString();
+}
+
+vector<string> Card::legality() {
+  vector<string> output;
+  output.push_back(data["legalities"]["standard"].GetString());
+  output.push_back(data["legalities"]["future"].GetString());
+  output.push_back(data["legalities"]["historic"].GetString());
+  output.push_back(data["legalities"]["gladiator"].GetString());
+  output.push_back(data["legalities"]["pioneer"].GetString());
+  output.push_back(data["legalities"]["explorer"].GetString());
+  output.push_back(data["legalities"]["modern"].GetString());
+  output.push_back(data["legalities"]["legacy"].GetString());
+  output.push_back(data["legalities"]["pauper"].GetString());
+  output.push_back(data["legalities"]["vintage"].GetString());
+  output.push_back(data["legalities"]["penny"].GetString());
+  output.push_back(data["legalities"]["commander"].GetString());
+  output.push_back(data["legalities"]["brawl"].GetString());
+  output.push_back(data["legalities"]["historicbrawl"].GetString());
+  output.push_back(data["legalities"]["alchemy"].GetString());
+  output.push_back(data["legalities"]["paupercommander"].GetString());
+  output.push_back(data["legalities"]["duel"].GetString());
+  output.push_back(data["legalities"]["oldschool"].GetString());
+  output.push_back(data["legalities"]["premodern"].GetString());
+  return output;
+}

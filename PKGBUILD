@@ -1,7 +1,7 @@
 # Maintainer: Sebastien MacDougall-Landry
 
 pkgname=libscry
-pkgver=0.3
+pkgver=0.3.1
 pkgrel=1
 pkgdesc='A Magic: The Gathering library'
 url='https://github.com/EmperorPenguin18/libscry/'
