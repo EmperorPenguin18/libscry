@@ -17,7 +17,7 @@ Other Linux
 ```
 git clone https://github.com/EmperorPenguin/libscry
 cd libscry
-make
+make release
 make install #as root
 ```
 ## Documentation
