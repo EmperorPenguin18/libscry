@@ -9,7 +9,7 @@ source=("$pkgname-$pkgver.tar.gz::https://github.com/EmperorPenguin18/libscry/ar
 arch=('x86_64')
 license=('GPL3')
 depends=('curl' 'sqlite' 'rapidjson')
-sha256sums=('fa4526f61650b38aab5dde76da234b068f8a86870dd159bce411d65b5e118ace')
+sha256sums=('6991bd1ef3bc492e152be2b623c7a5510e43cd3ffe9c5c75f8c6a7147c350381')
 
 build () {
   cd "$srcdir/$pkgname-$pkgver"
